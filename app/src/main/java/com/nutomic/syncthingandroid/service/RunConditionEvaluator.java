@@ -1,6 +1,7 @@
 package com.nutomic.syncthingandroid.service;
 
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import androidx.annotation.StringRes;
 
@@ -20,7 +21,44 @@ import java.util.Set;
  */
 public final class RunConditionEvaluator {
 
+    private static final String TAG = "RunConditionEvaluator";
+
+    /** Defaults and ranges match the input checks in SettingsRunConditionsScreen. */
+    public static final int SYNC_DURATION_DEFAULT = 5;
+    public static final int SYNC_DURATION_MAX = 1440;
+    public static final int SLEEP_INTERVAL_DEFAULT = 60;
+    public static final int SLEEP_INTERVAL_MAX = 30240;
+
     private RunConditionEvaluator() {
+    }
+
+    /**
+     * Reads a minutes pref stored as a string. A missing, non-numeric or out-of-range value
+     * (for example from an imported backup) falls back to {@code defaultMinutes}.
+     */
+    public static int minutesPref(SharedPreferences prefs, String key, int defaultMinutes, int min, int max) {
+        String value = prefs.getString(key, null);
+        if (value == null) {
+            return defaultMinutes;
+        }
+        try {
+            int minutes = Integer.parseInt(value.trim());
+            if (minutes >= min && minutes <= max) {
+                return minutes;
+            }
+        } catch (NumberFormatException ignored) {
+            // Falls through to the default below.
+        }
+        Log.w(TAG, "Invalid value for pref \"" + key + "\", using default " + defaultMinutes);
+        return defaultMinutes;
+    }
+
+    public static int sleepIntervalMinutes(SharedPreferences prefs) {
+        return minutesPref(prefs, Constants.PREF_SLEEP_INTERVAL_MINUTES, SLEEP_INTERVAL_DEFAULT, 1, SLEEP_INTERVAL_MAX);
+    }
+
+    public static int syncDurationMinutes(SharedPreferences prefs) {
+        return minutesPref(prefs, Constants.PREF_SYNC_DURATION_MINUTES, SYNC_DURATION_DEFAULT, 1, SYNC_DURATION_MAX);
     }
 
     /**
@@ -116,7 +154,7 @@ public final class RunConditionEvaluator {
 
         // Time schedule: we are inside a run frame if the last run was more than one sleep interval ago.
         long lastRunTime = prefs.getLong(Constants.PREF_LAST_RUN_TIME, 0);
-        if (nowElapsedMs - lastRunTime > Integer.parseInt(prefs.getString(Constants.PREF_SLEEP_INTERVAL_MINUTES, "60")) * 60 * 1000) {
+        if (nowElapsedMs - lastRunTime > sleepIntervalMinutes(prefs) * 60 * 1000) {
             timeConditionMatch = true;
         }
         if (prefRunOnTimeSchedule && !timeConditionMatch) {

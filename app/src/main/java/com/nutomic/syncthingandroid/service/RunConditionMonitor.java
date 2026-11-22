@@ -153,7 +153,7 @@ public class RunConditionMonitor {
                 new IntentFilter(ACTION_UPDATE_SHOULDRUN_DECISION));
 
         if (!Constants.isRunningOnEmulator()) {
-            triggeredSyncSleepIntervalS = Integer.parseInt(mPreferences.getString(Constants.PREF_SLEEP_INTERVAL_MINUTES,"60")) * 60;
+            triggeredSyncSleepIntervalS = RunConditionEvaluator.sleepIntervalMinutes(mPreferences) * 60;
         }
         long lastSyncTimeSinceBootMillisecs = mPreferences.getLong(Constants.PREF_LAST_RUN_TIME, 0);
         long elapsedRealtime = SystemClock.elapsedRealtime();
@@ -350,8 +350,8 @@ public class RunConditionMonitor {
      */
     public void updateShouldRunDecision() {
         if (!Constants.isRunningOnEmulator()) {
-            triggeredSyncDurationS = Integer.parseInt(mPreferences.getString(Constants.PREF_SYNC_DURATION_MINUTES, "5")) * 60;
-            triggeredSyncSleepIntervalS = Integer.parseInt(mPreferences.getString(Constants.PREF_SLEEP_INTERVAL_MINUTES, "60")) * 60;
+            triggeredSyncDurationS = RunConditionEvaluator.syncDurationMinutes(mPreferences) * 60;
+            triggeredSyncSleepIntervalS = RunConditionEvaluator.sleepIntervalMinutes(mPreferences) * 60;
         }
 
         boolean newShouldRun = decideShouldRun();

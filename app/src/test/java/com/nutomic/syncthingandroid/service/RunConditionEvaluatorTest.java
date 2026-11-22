@@ -243,6 +243,58 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.WIFI_DISALLOWED).inOrder();
     }
 
+    private int sleepIntervalPref() {
+        return RunConditionEvaluator.minutesPref(prefs, Constants.PREF_SLEEP_INTERVAL_MINUTES,
+                RunConditionEvaluator.SLEEP_INTERVAL_DEFAULT, 1, RunConditionEvaluator.SLEEP_INTERVAL_MAX);
+    }
+
+    @Test
+    public void minutesPref_validValue_returned() {
+        prefs.edit().putString(Constants.PREF_SLEEP_INTERVAL_MINUTES, "15").commit();
+        assertThat(sleepIntervalPref()).isEqualTo(15);
+    }
+
+    @Test
+    public void minutesPref_nonNumeric_returnsDefault() {
+        for (String bad : new String[]{"abc", ""}) {
+            prefs.edit().putString(Constants.PREF_SLEEP_INTERVAL_MINUTES, bad).commit();
+            assertThat(sleepIntervalPref()).isEqualTo(60);
+        }
+    }
+
+    @Test
+    public void minutesPref_outOfRange_returnsDefault() {
+        for (String bad : new String[]{"0", "-5", "30241"}) {
+            prefs.edit().putString(Constants.PREF_SLEEP_INTERVAL_MINUTES, bad).commit();
+            assertThat(sleepIntervalPref()).isEqualTo(60);
+        }
+    }
+
+    @Test
+    public void minutesPref_missing_returnsDefault() {
+        assertThat(sleepIntervalPref()).isEqualTo(60);
+        assertThat(RunConditionEvaluator.minutesPref(prefs, Constants.PREF_SYNC_DURATION_MINUTES,
+                RunConditionEvaluator.SYNC_DURATION_DEFAULT, 1, RunConditionEvaluator.SYNC_DURATION_MAX))
+                .isEqualTo(5);
+    }
+
+    @Test
+    public void decide_nonNumericSleepInterval_usesDefault() {
+        prefs.edit()
+                .putBoolean(Constants.PREF_RUN_ON_TIME_SCHEDULE, true)
+                .putLong(Constants.PREF_LAST_RUN_TIME, NOW - 10 * MINUTE)
+                .putString(Constants.PREF_SLEEP_INTERVAL_MINUTES, "60")
+                .commit();
+        Decision expected = decide(wifi());
+
+        prefs.edit().putString(Constants.PREF_SLEEP_INTERVAL_MINUTES, "abc").commit();
+        Decision actual = decide(wifi());
+
+        assertThat(actual.shouldRun).isEqualTo(expected.shouldRun);
+        assertThat(actual.reasons).isEqualTo(expected.reasons);
+        assertThat(actual.timeConditionMatch).isEqualTo(expected.timeConditionMatch);
+    }
+
     @Test
     public void objectConditions_usesObjectPrefNames() {
         String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "abc";
