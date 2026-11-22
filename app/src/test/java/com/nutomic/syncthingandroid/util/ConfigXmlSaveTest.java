@@ -42,6 +42,8 @@ public class ConfigXmlSaveTest {
         File temp = Constants.getConfigTempFile(ctx);
         Files.write(temp.toPath(), "garbage".getBytes(StandardCharsets.UTF_8));
         assertThat(temp.setWritable(false)).isTrue();
+        // Root ignores file permissions, so the write would not fail there.
+        assumeFalse("host user can write read-only files (root?)", temp.canWrite());
 
         config.saveChanges();
 
