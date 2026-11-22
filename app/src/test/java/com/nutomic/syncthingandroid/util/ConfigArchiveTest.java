@@ -194,6 +194,75 @@ public class ConfigArchiveTest {
         assertThat(ConfigArchive.readPrefs(file)).isEqualTo(exported);
     }
 
+    // ---- Part B: class allow-list when reading prefs ----
+
+    private File serialise(Object object) throws Exception {
+        File file = tmp.newFile();
+        try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(new java.io.FileOutputStream(file))) {
+            out.writeObject(object);
+        }
+        return file;
+    }
+
+    @Test
+    public void readPrefs_rejectsClassOutsideAllowList() throws Exception {
+        Map<String, Object> withList = new HashMap<>();
+        withList.put("list", new java.util.ArrayList<>(Arrays.asList("a")));
+        File listFile = serialise(withList);
+        try {
+            ConfigArchive.readPrefs(listFile);
+            throw new AssertionError("ArrayList value was accepted");
+        } catch (java.io.InvalidClassException expected) {
+            assertThat(expected.getMessage()).contains("java.util.ArrayList");
+        }
+
+        File dateFile = serialise(new Date());
+        try {
+            ConfigArchive.readPrefs(dateFile);
+            throw new AssertionError("Date was accepted");
+        } catch (java.io.InvalidClassException expected) {
+            assertThat(expected.getMessage()).contains("java.util.Date");
+        }
+    }
+
+    @Test
+    public void readPrefs_rejectsNonMapTopLevel() throws Exception {
+        File file = serialise(new HashSet<>(Arrays.asList("a")));
+        try {
+            ConfigArchive.readPrefs(file);
+            throw new AssertionError("Top-level set was accepted");
+        } catch (java.io.InvalidClassException expected) {
+            // Rejected.
+        }
+    }
+
+    @Test
+    public void readPrefs_acceptsFileWrittenByWritePrefs() throws Exception {
+        Map<String, ?> exported = sampleExport();
+        File file = tmp.newFile();
+        ConfigArchive.writePrefs(exported, file);
+        assertThat(ConfigArchive.readPrefs(file)).isEqualTo(exported);
+    }
+
+    @Test
+    public void import_rejectedPrefsFile_leavesCurrentPrefsUntouched() throws Exception {
+        SharedPreferences prefs = realPrefs();
+        prefs.edit().putString("current", "kept").commit();
+        Map<String, Object> crafted = new HashMap<>();
+        crafted.put("evil", new java.util.ArrayList<>());
+        File file = serialise(crafted);
+
+        // Same order as SyncthingService.importConfigSharedPrefs: read first, then apply.
+        try {
+            Map<String, Object> raw = ConfigArchive.readPrefs(file);
+            ConfigArchive.applyPrefs(prefs.edit(), ConfigArchive.importablePrefs(raw), "", "");
+            throw new AssertionError("Crafted file was accepted");
+        } catch (java.io.InvalidClassException expected) {
+            // Rejected before applyPrefs ran.
+        }
+        assertThat(prefs.getString("current", null)).isEqualTo("kept");
+    }
+
     @Test
     public void importablePrefs_dropsEveryDeprecatedAndCacheKey() {
         Map<String, Object> raw = new HashMap<>();

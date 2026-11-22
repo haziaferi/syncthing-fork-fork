@@ -3,8 +3,6 @@ package com.nutomic.syncthingandroid.util;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
 import com.nutomic.syncthingandroid.service.Constants;
 
 import net.lingala.zip4j.ZipFile;
@@ -19,8 +17,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -159,16 +160,52 @@ public final class ConfigArchive {
     }
 
     /**
-     * Reads prefs written by {@link #writePrefs}.
-     * Returns null if the file holds something other than a map.
+     * The only classes a prefs backup may contain: what {@code SharedPreferences.getAll()}
+     * returns. {@code Number} is needed because deserialising a boxed number also resolves its
+     * superclass. Strings are written without a class descriptor, so they need no entry.
      */
-    @Nullable
+    static final Set<String> PREFS_ALLOWED_CLASSES = new HashSet<>(Arrays.asList(
+            "java.util.HashMap",
+            "java.util.HashSet",
+            "java.lang.Boolean",
+            "java.lang.Integer",
+            "java.lang.Long",
+            "java.lang.Float",
+            "java.lang.Number"
+    ));
+
+    /** Refuses to load any class outside {@link #PREFS_ALLOWED_CLASSES}. */
+    private static final class AllowListObjectInputStream extends ObjectInputStream {
+        AllowListObjectInputStream(InputStream in) throws IOException {
+            super(in);
+        }
+
+        @Override
+        protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+            if (!PREFS_ALLOWED_CLASSES.contains(desc.getName())) {
+                throw new InvalidClassException(desc.getName(), "not allowed in prefs backup");
+            }
+            return super.resolveClass(desc);
+        }
+
+        @Override
+        protected Class<?> resolveProxyClass(String[] interfaces) throws IOException {
+            throw new InvalidClassException("proxy", "not allowed in prefs backup");
+        }
+    }
+
+    /**
+     * Reads prefs written by {@link #writePrefs}. Only the classes in
+     * {@link #PREFS_ALLOWED_CLASSES} are accepted, and the top-level object must be a map;
+     * anything else throws {@link InvalidClassException} before any pref is changed.
+     */
     public static Map<String, Object> readPrefs(File file) throws IOException, ClassNotFoundException {
         try (FileInputStream fileInputStream = new FileInputStream(file);
-             ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
+             ObjectInputStream objectInputStream = new AllowListObjectInputStream(fileInputStream)) {
             Object object = objectInputStream.readObject();
             if (!(object instanceof Map)) {
-                return null;
+                throw new InvalidClassException(object == null ? "null" : object.getClass().getName(),
+                        "prefs backup must hold a map");
             }
             Map<String, Object> result = new LinkedHashMap<>();
             for (Map.Entry<?, ?> e : ((Map<?, ?>) object).entrySet()) {

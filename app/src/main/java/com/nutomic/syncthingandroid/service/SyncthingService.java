@@ -1307,12 +1307,9 @@ public class SyncthingService extends Service {
 
     private boolean importConfigSharedPrefs(final File file) {
         try {
-            // Read, deserialize shared preferences. Nothing is changed if this fails.
+            // Read, deserialize shared preferences. Nothing is changed if this fails,
+            // including when the file holds a class outside the allow-list.
             Map<String, Object> sharedPrefsMap = ConfigArchive.readPrefs(file);
-            if (sharedPrefsMap == null) {
-                Log.e(TAG, "importConfig: Invalid object stream");
-                return true;
-            }
 
             // Keep the current backup location and password; the imported ones may differ.
             String relPathToZip = mPreferences.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "");
