@@ -84,7 +84,7 @@ public class ConfigArchiveTest {
                 new File(source, "index-v2"));
     }
 
-    // ---- Part A: zip handling ----
+    // Zip handling.
 
     @Test
     public void writeZip_thenCheck_ok_withAndWithoutPassword() throws Exception {
@@ -164,7 +164,7 @@ public class ConfigArchiveTest {
         assertThat(new File(dest, "index-v2/sub/000001.log").exists()).isTrue();
     }
 
-    // ---- Part A: prefs handling ----
+    // Prefs handling.
 
     private SharedPreferences realPrefs() {
         Context ctx = ApplicationProvider.getApplicationContext();
@@ -194,7 +194,7 @@ public class ConfigArchiveTest {
         assertThat(ConfigArchive.readPrefs(file)).isEqualTo(exported);
     }
 
-    // ---- Part B: class allow-list when reading prefs ----
+    // Class allow-list when reading prefs.
 
     private File serialise(Object object) throws Exception {
         File file = tmp.newFile();
