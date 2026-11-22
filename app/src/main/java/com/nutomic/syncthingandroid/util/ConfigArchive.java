@@ -209,7 +209,11 @@ public final class ConfigArchive {
             }
             Map<String, Object> result = new LinkedHashMap<>();
             for (Map.Entry<?, ?> e : ((Map<?, ?>) object).entrySet()) {
-                result.put(String.valueOf(e.getKey()), e.getValue());
+                if (!(e.getKey() instanceof String)) {
+                    Log.w(TAG, "Ignoring pref with a non-string key");
+                    continue;
+                }
+                result.put((String) e.getKey(), e.getValue());
             }
             return result;
         }

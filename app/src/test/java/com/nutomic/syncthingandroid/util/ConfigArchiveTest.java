@@ -237,6 +237,17 @@ public class ConfigArchiveTest {
     }
 
     @Test
+    public void readPrefs_dropsNonStringKeys() throws Exception {
+        Map<Object, Object> raw = new HashMap<>();
+        raw.put(5, "x");
+        raw.put(null, "n");
+        raw.put("ok", "y");
+        Map<String, Object> read = ConfigArchive.readPrefs(serialise(raw));
+        assertThat(ConfigArchive.importablePrefs(read).keySet()).containsExactly("ok");
+        assertThat(read.keySet()).containsExactly("ok");
+    }
+
+    @Test
     public void readPrefs_acceptsFileWrittenByWritePrefs() throws Exception {
         Map<String, ?> exported = sampleExport();
         File file = tmp.newFile();
