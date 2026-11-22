@@ -182,22 +182,13 @@ jobs:
             echo "No cached native libraries found for syncthing commit ${SYNCTHING_COMMIT} - will build from scratch"
           fi
 
-      - name: Build app
+      # Native libraries build in their own step, so they are cached even when lint or tests fail later.
+      - name: Build native libraries
         run: |
           set -eu
           unset ANDROID_NDK_HOME
           git config --global --add safe.directory '*'
-          # AGP only creates unit-test tasks for the debug build type, so both jobs run testDebugUnitTest.
-          ./gradlew --no-daemon buildNative lint${{ inputs.buildType }} testDebugUnitTest assemble${{ inputs.buildType }} ${{ inputs.gradleOptions }}
-
-      - name: Upload unit test report
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: unit-test-report-${{ inputs.buildType }}
-          retention-days: 7
-          path: |
-            app/build/reports/tests/
+          ./gradlew --no-daemon buildNative
 
       - name: Save prebuilt native libraries to cache
         run: |
@@ -213,6 +204,22 @@ jobs:
           else
             echo "No native libraries found to cache"
           fi
+
+      - name: Build app
+        run: |
+          set -eu
+          unset ANDROID_NDK_HOME
+          # AGP only creates unit-test tasks for the debug build type, so both jobs run testDebugUnitTest.
+          ./gradlew --no-daemon lint${{ inputs.buildType }} testDebugUnitTest assemble${{ inputs.buildType }} ${{ inputs.gradleOptions }}
+
+      - name: Upload unit test report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-test-report-${{ inputs.buildType }}
+          retention-days: 7
+          path: |
+            app/build/reports/tests/
 
       - name: Extract application ID from gradle config
         id: get_app_id
