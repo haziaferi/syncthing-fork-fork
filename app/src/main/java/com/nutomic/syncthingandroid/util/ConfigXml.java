@@ -25,10 +25,8 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -1268,9 +1266,12 @@ public class ConfigXml {
 
         Log.i(TAG, "Saving config file");
         File mConfigTempFile = Constants.getConfigTempFile(mContext);
-        try {
+        /*
+         * Write to a temp file and only rename it over config.xml after a complete,
+         * synced write. On any failure the temp file is removed and config.xml is left as it was.
+         */
+        try (FileOutputStream fileOutputStream = new FileOutputStream(mConfigTempFile)) {
             // Write XML header.
-            FileOutputStream fileOutputStream = new FileOutputStream(mConfigTempFile);
             fileOutputStream.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>".getBytes(StandardCharsets.UTF_8));
 
             // Prepare Object-to-XML transform.
@@ -1288,21 +1289,31 @@ public class ConfigXml {
             transformer.transform(new DOMSource(mConfig), streamResult);
             byte[] outputBytes = byteArrayOutputStream.toByteArray();
             fileOutputStream.write(outputBytes);
-            fileOutputStream.close();
+            fileOutputStream.flush();
+            fileOutputStream.getFD().sync();
         } catch (TransformerException e) {
             Log.w(TAG, "Failed to transform object to xml and save temporary config file", e);
+            deleteTempConfig(mConfigTempFile);
             return;
-        } catch (FileNotFoundException e) {
-            Log.w(TAG, "Failed to save temporary config file, FileNotFoundException", e);
-        } catch (UnsupportedEncodingException e) {
-            Log.w(TAG, "Failed to save temporary config file, UnsupportedEncodingException", e);
         } catch (IOException e) {
-            Log.w(TAG, "Failed to save temporary config file, IOException", e);
+            Log.w(TAG, "Failed to save temporary config file, keeping the existing config", e);
+            deleteTempConfig(mConfigTempFile);
+            return;
         }
         try {
-            mConfigTempFile.renameTo(mConfigFile);
-        } catch (Exception e) {
-            Log.w(TAG, "Failed to rename temporary config file to original file");
+            if (!mConfigTempFile.renameTo(mConfigFile)) {
+                Log.w(TAG, "Failed to rename temporary config file to original file");
+                deleteTempConfig(mConfigTempFile);
+            }
+        } catch (SecurityException e) {
+            Log.w(TAG, "Failed to rename temporary config file to original file", e);
+            deleteTempConfig(mConfigTempFile);
+        }
+    }
+
+    private void deleteTempConfig(File tempFile) {
+        if (tempFile.exists() && !tempFile.delete()) {
+            Log.w(TAG, "Failed to delete temporary config file '" + tempFile + "'");
         }
     }
 
