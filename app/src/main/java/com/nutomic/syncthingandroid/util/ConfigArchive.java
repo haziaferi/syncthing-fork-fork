@@ -130,14 +130,19 @@ public final class ConfigArchive {
                 Log.e(TAG, "ZIP file is not encrypted, but a password was specified.");
                 return Check.NOT_ENCRYPTED_BUT_PASSWORD_SET;
             }
+            // Log every missing entry, so one attempt shows all that needs fixing.
+            boolean missing = false;
             for (String entry : requiredEntries) {
                 if (zipFile.getFileHeader(entry) == null) {
                     Log.e(TAG, "Required file not found inside zip [" + entry + "]");
-                    return Check.MISSING_REQUIRED_ENTRY;
+                    missing = true;
                 }
             }
+            if (missing) {
+                return Check.MISSING_REQUIRED_ENTRY;
+            }
             String scratch = scratchDir.getAbsolutePath();
-            zipFile.extractFile(Constants.PUBLIC_KEY_FILE, scratch);
+            zipFile.extractFile(Constants.PUBLIC_KEY_FILE, scratch, unzipParameters());
             new File(scratchDir, Constants.PUBLIC_KEY_FILE).delete();
         } catch (ZipException e) {
             Log.e(TAG, "Failed to open zip, " + e.getMessage());
@@ -147,13 +152,22 @@ public final class ConfigArchive {
     }
 
     /**
-     * Extracts every entry. Symbolic link entries are never created as links (zip4j would by
-     * default), so an archive can't plant a link pointing outside {@code destDir}.
+     * Extracts every entry. Symbolic link entries are never created as links, so an archive
+     * can't plant a link pointing outside {@code destDir}.
      */
     public static void extractAll(File zip, String password, File destDir) throws IOException {
+        open(zip, password).extractAll(destDir.getAbsolutePath(), unzipParameters());
+    }
+
+    /**
+     * Settings for every extraction from a backup: symbolic link entries are skipped. zip4j
+     * creates them by default, which would let an archive plant a link, and on API 23-25
+     * (no java.nio.file) crash the app.
+     */
+    static UnzipParameters unzipParameters() {
         UnzipParameters unzipParameters = new UnzipParameters();
         unzipParameters.setExtractSymbolicLinks(false);
-        open(zip, password).extractAll(destDir.getAbsolutePath(), unzipParameters);
+        return unzipParameters;
     }
 
     /** Serialises prefs the way every earlier release did, so old backups stay readable. */
