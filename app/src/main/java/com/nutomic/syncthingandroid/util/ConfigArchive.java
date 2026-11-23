@@ -7,6 +7,7 @@ import com.nutomic.syncthingandroid.service.Constants;
 
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.model.UnzipParameters;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.AesKeyStrength;
 import net.lingala.zip4j.model.enums.CompressionLevel;
@@ -145,8 +146,14 @@ public final class ConfigArchive {
         return Check.OK;
     }
 
+    /**
+     * Extracts every entry. Symbolic link entries are never created as links (zip4j would by
+     * default), so an archive can't plant a link pointing outside {@code destDir}.
+     */
     public static void extractAll(File zip, String password, File destDir) throws IOException {
-        open(zip, password).extractAll(destDir.getAbsolutePath());
+        UnzipParameters unzipParameters = new UnzipParameters();
+        unzipParameters.setExtractSymbolicLinks(false);
+        open(zip, password).extractAll(destDir.getAbsolutePath(), unzipParameters);
     }
 
     /** Serialises prefs the way every earlier release did, so old backups stay readable. */

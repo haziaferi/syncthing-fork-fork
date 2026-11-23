@@ -1,6 +1,7 @@
 package com.nutomic.syncthingandroid.util;
 
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -9,6 +10,7 @@ import com.nutomic.syncthingandroid.service.Constants;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +36,8 @@ public final class ConfigImporter {
     public static final String STAGING_DIR = "import-staging";
     public static final String ROLLBACK_DIR = "import-rollback";
     public static final String COMMIT_MARKER = "COMMIT_IN_PROGRESS";
+    /** A finished rollback folder is renamed to this before it is deleted. */
+    public static final String TRASH_DIR = "import-rollback.trash";
     /** Prefs as they were before the commit, inside the rollback folder. */
     public static final String PREFS_SNAPSHOT = "prefs-snapshot.dat";
     /** Suffix of a rollback entry recording that a live item did not exist before the commit. */
@@ -167,12 +171,21 @@ public final class ConfigImporter {
             problems.add(Constants.CONFIG_FILE + " has no <configuration> root element");
             return;
         }
-        if (root.getElementsByTagName("gui").getLength() == 0) {
+        if (!hasChildElement(root, "gui")) {
             problems.add(Constants.CONFIG_FILE + " has no <gui> element");
         }
-        if (root.getElementsByTagName("options").getLength() == 0) {
+        if (!hasChildElement(root, "options")) {
             problems.add(Constants.CONFIG_FILE + " has no <options> element");
         }
+    }
+
+    private static boolean hasChildElement(Element parent, String tagName) {
+        for (Node n = parent.getFirstChild(); n != null; n = n.getNextSibling()) {
+            if (n.getNodeType() == Node.ELEMENT_NODE && tagName.equals(n.getNodeName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Moves a file or folder; injectable so tests can fail a chosen move. */
@@ -189,6 +202,11 @@ public final class ConfigImporter {
             throws ImportException {
         Map<String, ?> prefsBefore = new HashMap<>(prefs.getAll());
         File rollbackDir = new File(filesDir, ROLLBACK_DIR);
+        if (new File(rollbackDir, COMMIT_MARKER).exists()) {
+            // An earlier rollback is still pending; its saved files must not be overwritten.
+            deleteQuietly(staged.dir);
+            throw new ImportException("An earlier import is still being rolled back; restart the app and try again");
+        }
         deleteQuietly(rollbackDir);
         try {
             if (!rollbackDir.mkdirs()) {
@@ -246,20 +264,41 @@ public final class ConfigImporter {
         if (failure != null) {
             Log.e(TAG, "Import failed, rolling back: " + failure);
             Collections.reverse(moved);
+            boolean restored = true;
             for (String name : moved) {
-                restoreItem(filesDir, rollbackDir, name);
+                restored &= restoreItem(filesDir, rollbackDir, name, mover);
             }
-            if (!ConfigArchive.restorePrefs(prefs, prefsBefore)) {
-                Log.e(TAG, "Failed to restore the previous settings");
-            }
-            deleteQuietly(rollbackDir);
+            restored &= ConfigArchive.restorePrefs(prefs, prefsBefore);
             deleteQuietly(staged.dir);
+            if (!restored) {
+                // Keep the marker and everything saved, so the next start retries the rollback.
+                throw new ImportException(failure + "; the rollback is incomplete and will be retried at the next start");
+            }
+            discardRollback(rollbackDir);
             throw new ImportException(failure);
         }
 
-        new File(rollbackDir, COMMIT_MARKER).delete();
-        deleteQuietly(rollbackDir);
+        discardRollback(rollbackDir);
         deleteQuietly(staged.dir);
+    }
+
+    /**
+     * Retires the rollback folder of a finished commit or rollback. It is renamed first, so a
+     * leftover marker can never be mistaken for an interrupted import later.
+     */
+    private static void discardRollback(File rollbackDir) {
+        File trash = new File(rollbackDir.getParentFile(), TRASH_DIR);
+        deleteQuietly(trash);
+        if (rollbackDir.renameTo(trash)) {
+            deleteQuietly(trash);
+            return;
+        }
+        File marker = new File(rollbackDir, COMMIT_MARKER);
+        if (marker.exists() && !marker.delete()) {
+            Log.e(TAG, "Cannot retire " + rollbackDir + "; a later start may roll back this import");
+            return;
+        }
+        deleteQuietly(rollbackDir);
     }
 
     /**
@@ -268,30 +307,38 @@ public final class ConfigImporter {
      */
     public static boolean recoverInterruptedImport(File filesDir, SharedPreferences prefs) {
         File rollbackDir = new File(filesDir, ROLLBACK_DIR);
-        File stagingDir = new File(filesDir, STAGING_DIR);
-        boolean interrupted = new File(rollbackDir, COMMIT_MARKER).exists();
-        if (interrupted) {
-            Log.w(TAG, "Rolling back an import that was interrupted");
-            File[] items = rollbackDir.listFiles();
-            if (items != null) {
-                for (File item : items) {
-                    String name = item.getName();
-                    if (name.equals(COMMIT_MARKER) || name.equals(PREFS_SNAPSHOT)) {
-                        continue;
-                    }
-                    restoreItem(filesDir, rollbackDir,
-                            name.endsWith(ABSENT_SUFFIX) ? name.substring(0, name.length() - ABSENT_SUFFIX.length()) : name);
+        deleteQuietly(new File(filesDir, STAGING_DIR));
+        deleteQuietly(new File(filesDir, TRASH_DIR));
+        if (!new File(rollbackDir, COMMIT_MARKER).exists()) {
+            deleteQuietly(rollbackDir);
+            return false;
+        }
+        Log.w(TAG, "Rolling back an import that was interrupted");
+        boolean restored = true;
+        File[] items = rollbackDir.listFiles();
+        if (items != null) {
+            for (File item : items) {
+                String name = item.getName();
+                if (name.equals(COMMIT_MARKER) || name.equals(PREFS_SNAPSHOT)) {
+                    continue;
                 }
-            }
-            try {
-                ConfigArchive.restorePrefs(prefs, ConfigArchive.readPrefs(new File(rollbackDir, PREFS_SNAPSHOT)));
-            } catch (IOException | ClassNotFoundException e) {
-                Log.e(TAG, "Cannot restore the settings snapshot", e);
+                String liveName = name.endsWith(ABSENT_SUFFIX)
+                        ? name.substring(0, name.length() - ABSENT_SUFFIX.length()) : name;
+                restored &= restoreItem(filesDir, rollbackDir, liveName, File::renameTo);
             }
         }
-        deleteQuietly(rollbackDir);
-        deleteQuietly(stagingDir);
-        return interrupted;
+        try {
+            restored &= ConfigArchive.restorePrefs(prefs, ConfigArchive.readPrefs(new File(rollbackDir, PREFS_SNAPSHOT)));
+        } catch (IOException | ClassNotFoundException e) {
+            // Retrying can't help with an unreadable snapshot; the files are restored regardless.
+            Log.e(TAG, "Cannot restore the settings snapshot", e);
+        }
+        if (restored) {
+            discardRollback(rollbackDir);
+        } else {
+            Log.e(TAG, "Rollback incomplete; it will be retried at the next start");
+        }
+        return true;
     }
 
     /** Live items an import replaces, in commit order. */
@@ -307,18 +354,24 @@ public final class ConfigImporter {
         return names;
     }
 
-    /** Puts {@code name} back as it was before the commit touched it. */
-    private static void restoreItem(File filesDir, File rollbackDir, String name) {
+    /**
+     * Puts {@code name} back as it was before the commit touched it. Returns false if it could
+     * not; the saved copy then stays in the rollback folder for a later retry.
+     */
+    private static boolean restoreItem(File filesDir, File rollbackDir, String name, Mover mover) {
         File live = new File(filesDir, name);
         File saved = new File(rollbackDir, name);
         File absent = new File(rollbackDir, name + ABSENT_SUFFIX);
         if (!saved.exists() && !absent.exists()) {
-            return;  // Never touched.
+            return true;  // Never touched.
         }
         deleteQuietly(live);
-        if (saved.exists() && !saved.renameTo(live)) {
+        if (saved.exists() && !mover.move(saved, live)) {
             Log.e(TAG, "Failed to restore " + name);
+            return false;
         }
+        absent.delete();
+        return true;
     }
 
     private static void writeEmpty(File file) throws IOException {
@@ -327,11 +380,45 @@ public final class ConfigImporter {
         }
     }
 
+    /**
+     * Deletes a file or folder tree. A symbolic link is deleted itself and never followed, so a
+     * link planted by an archive can't make this delete anything outside the tree.
+     */
     static void deleteQuietly(File file) {
+        if (isSymbolicLink(file)) {
+            if (!file.delete()) {
+                Log.w(TAG, "Failed to delete link " + file);
+            }
+            return;
+        }
+        File[] children = file.isDirectory() ? file.listFiles() : null;
+        if (children != null) {
+            for (File child : children) {
+                deleteQuietly(child);
+            }
+        }
+        if (file.exists() && !file.delete()) {
+            Log.w(TAG, "Failed to delete " + file);
+        }
+    }
+
+    /**
+     * True if {@code file} itself is a symbolic link. API 26+ asks java.nio.file; API 23-25 lacks
+     * it, so there the link is detected by comparing canonical paths, which works on Linux.
+     */
+    static boolean isSymbolicLink(File file) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return java.nio.file.Files.isSymbolicLink(file.toPath());
+        }
         try {
-            FileUtils.deleteDirectoryRecursively(file);
+            File parent = file.getAbsoluteFile().getParentFile();
+            if (parent == null) {
+                return false;
+            }
+            File expected = new File(parent.getCanonicalFile(), file.getName());
+            return !expected.getCanonicalFile().equals(expected.getAbsoluteFile());
         } catch (IOException e) {
-            Log.w(TAG, "Failed to delete " + file, e);
+            return true;  // Unresolvable: treat as a link, so it is never followed.
         }
     }
 }

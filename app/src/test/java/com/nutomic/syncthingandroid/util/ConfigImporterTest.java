@@ -223,10 +223,137 @@ public class ConfigImporterTest {
 
     // Commit and rollback.
 
-    /** A mover that succeeds until its {@code failOn}-th call (1-based), which fails. */
-    private static ConfigImporter.Mover failingOn(int failOn) {
+    /** A mover whose listed calls (1-based) fail; all others rename. */
+    private static ConfigImporter.Mover failingOn(int... failOn) {
         int[] calls = {0};
-        return (from, to) -> ++calls[0] != failOn && from.renameTo(to);
+        return (from, to) -> {
+            int call = ++calls[0];
+            for (int f : failOn) {
+                if (f == call) {
+                    return false;
+                }
+            }
+            return from.renameTo(to);
+        };
+    }
+
+    /** Creates a symbolic link, or skips the test where the host can't (e.g. Windows without the privilege). */
+    private static void symlinkOrSkip(File link, File target) {
+        try {
+            Files.createSymbolicLink(link.toPath(), target.toPath());
+        } catch (Exception e) {
+            org.junit.Assume.assumeNoException("host can't create symbolic links", e);
+        }
+    }
+
+    @Test
+    public void stage_symlinkEntry_isNeverFollowed() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        Map<String, String> before = snapshot(filesDir);
+        writeLiveSet(source, "new", VALID_CONFIG);
+        File link = new File(source, "x");
+        symlinkOrSkip(link, new File(".."));
+        net.lingala.zip4j.model.ZipParameters params = new net.lingala.zip4j.model.ZipParameters();
+        params.setSymbolicLinkAction(net.lingala.zip4j.model.ZipParameters.SymbolicLinkAction.INCLUDE_LINK_ONLY);
+        net.lingala.zip4j.ZipFile z = new net.lingala.zip4j.ZipFile(zip);
+        for (String name : THREE) {
+            z.addFile(new File(source, name));
+        }
+        z.addFile(link, params);
+
+        try {
+            ConfigImporter.Staged staged = ConfigImporter.stage(zip, "", filesDir);
+            assertThat(ConfigImporter.isSymbolicLink(new File(staged.dir, "x"))).isFalse();
+            ConfigImporter.deleteQuietly(staged.dir);
+        } catch (ConfigImporter.ImportException rejected) {
+            // Rejecting the archive is fine too; what matters is the live files below.
+        }
+        Map<String, String> after = snapshot(filesDir);
+        assertThat(after).isEqualTo(before);
+    }
+
+    @Test
+    public void deleteQuietly_deletesALinkWithoutFollowingIt() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        Map<String, String> before = snapshot(filesDir);
+        File dir = tmp.newFolder("tree");
+        write(new File(dir, "own.txt"), "x");
+        symlinkOrSkip(new File(dir, "link"), filesDir);
+
+        ConfigImporter.deleteQuietly(dir);
+
+        assertThat(dir.exists()).isFalse();
+        assertThat(snapshot(filesDir)).isEqualTo(before);
+    }
+
+    @Test
+    public void stage_guiNestedDeeper_rejected() throws Exception {
+        writeLiveSet(source, "new", "<configuration><x><gui/></x><options/></configuration>");
+        archive(null, THREE);
+        assertThrows(ConfigImporter.ImportException.class, () -> ConfigImporter.stage(zip, "", filesDir));
+    }
+
+    @Test
+    public void commit_restoreFails_keepsRollbackAndNextStartFinishesIt() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG.replace("<apikey>k</apikey>", "<apikey>live</apikey>"));
+        prefs.edit().putString("kept", "yes").commit();
+        Map<String, String> before = snapshot(filesDir);
+        ConfigImporter.Staged staged = stageFull(null);
+
+        // Call 3 (moving cert.pem aside) fails, then call 4 (restoring config.xml) fails too.
+        ConfigImporter.ImportException e = assertThrows(ConfigImporter.ImportException.class,
+                () -> ConfigImporter.commit(staged, filesDir, prefs, failingOn(3, 4)));
+        assertThat(e.getMessage()).contains("retried");
+        assertThat(new File(filesDir, ConfigImporter.ROLLBACK_DIR + "/" + ConfigImporter.COMMIT_MARKER).exists()).isTrue();
+
+        assertThat(ConfigImporter.recoverInterruptedImport(filesDir, prefs)).isTrue();
+
+        assertThat(snapshot(filesDir)).isEqualTo(before);
+        assertThat(prefs.getAll()).containsExactly("kept", "yes");
+    }
+
+    @Test
+    public void commit_refusesWhileAnEarlierRollbackIsPending() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        write(new File(filesDir, ConfigImporter.ROLLBACK_DIR + "/" + Constants.PRIVATE_KEY_FILE), "key-saved");
+        write(new File(filesDir, ConfigImporter.ROLLBACK_DIR + "/" + ConfigImporter.COMMIT_MARKER), "");
+        ConfigImporter.Staged staged = stageFull(null);
+
+        assertThrows(ConfigImporter.ImportException.class,
+                () -> ConfigImporter.commit(staged, filesDir, prefs, RENAME));
+
+        assertThat(new File(filesDir, ConfigImporter.ROLLBACK_DIR + "/" + Constants.PRIVATE_KEY_FILE).exists()).isTrue();
+    }
+
+    @Test
+    public void commit_success_thenRecover_changesNothing() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        ConfigImporter.Staged staged = stageFull(null);
+        ConfigImporter.commit(staged, filesDir, prefs, RENAME);
+        Map<String, String> afterImport = snapshot(filesDir);
+        Map<String, ?> prefsAfterImport = new HashMap<>(prefs.getAll());
+
+        assertThat(ConfigImporter.recoverInterruptedImport(filesDir, prefs)).isFalse();
+
+        assertThat(snapshot(filesDir)).isEqualTo(afterImport);
+        assertThat(prefs.getAll()).isEqualTo(prefsAfterImport);
+    }
+
+    @Test
+    public void commit_prefsRestoreAlsoFails_keepsRollbackForRetry() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        prefs.edit().putString("kept", "yes").commit();
+        Map<String, Object> exported = new HashMap<>();
+        exported.put("run_on_wifi", false);
+        ConfigImporter.Staged staged = stageFull(exported);
+
+        ConfigImporter.ImportException e = assertThrows(ConfigImporter.ImportException.class,
+                () -> ConfigImporter.commit(staged, filesDir, new CommitFailingPrefs(prefs, Integer.MAX_VALUE), RENAME));
+
+        assertThat(e.getMessage()).contains("retried");
+        File rollback = new File(filesDir, ConfigImporter.ROLLBACK_DIR);
+        assertThat(new File(rollback, ConfigImporter.COMMIT_MARKER).exists()).isTrue();
+        assertThat(new File(rollback, ConfigImporter.PREFS_SNAPSHOT).exists()).isTrue();
     }
 
     private static final ConfigImporter.Mover RENAME = File::renameTo;
@@ -385,12 +512,21 @@ public class ConfigImporterTest {
         assertThat(snapshot(filesDir)).isEqualTo(live);
     }
 
-    /** Delegates to real prefs, but every editor's commit() fails without writing. */
+    /**
+     * Delegates to real prefs, but the first {@code failures} editor commits fail without
+     * writing anything. Later editors are the real ones.
+     */
     private static final class CommitFailingPrefs implements SharedPreferences {
         private final SharedPreferences real;
+        private int failuresLeft;
 
         CommitFailingPrefs(SharedPreferences real) {
+            this(real, 1);
+        }
+
+        CommitFailingPrefs(SharedPreferences real, int failures) {
             this.real = real;
+            this.failuresLeft = failures;
         }
 
         @Override public Map<String, ?> getAll() { return real.getAll(); }
@@ -406,6 +542,10 @@ public class ConfigImporterTest {
 
         @Override
         public Editor edit() {
+            if (failuresLeft <= 0) {
+                return real.edit();
+            }
+            failuresLeft--;
             return new Editor() {
                 @Override public Editor putString(String k, String v) { return this; }
                 @Override public Editor putStringSet(String k, java.util.Set<String> v) { return this; }
