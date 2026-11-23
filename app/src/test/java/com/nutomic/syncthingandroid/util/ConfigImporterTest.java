@@ -304,9 +304,10 @@ public class ConfigImporterTest {
         ConfigImporter.ImportException e = assertThrows(ConfigImporter.ImportException.class,
                 () -> ConfigImporter.commit(staged, filesDir, prefs, failingOn(3, 4)));
         assertThat(e.getMessage()).contains("retried");
-        assertThat(new File(filesDir, ConfigImporter.ROLLBACK_DIR + "/" + ConfigImporter.COMMIT_MARKER).exists()).isTrue();
+        assertThat(ConfigImporter.isRollbackPending(filesDir)).isTrue();
 
         assertThat(ConfigImporter.recoverInterruptedImport(filesDir, prefs)).isTrue();
+        assertThat(ConfigImporter.isRollbackPending(filesDir)).isFalse();
 
         assertThat(snapshot(filesDir)).isEqualTo(before);
         assertThat(prefs.getAll()).containsExactly("kept", "yes");

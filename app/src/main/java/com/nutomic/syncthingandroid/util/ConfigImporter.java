@@ -205,7 +205,7 @@ public final class ConfigImporter {
         if (new File(rollbackDir, COMMIT_MARKER).exists()) {
             // An earlier rollback is still pending; its saved files must not be overwritten.
             deleteQuietly(staged.dir);
-            throw new ImportException("An earlier import is still being rolled back; restart the app and try again");
+            throw new ImportException("An earlier import could not be rolled back completely; see the log");
         }
         deleteQuietly(rollbackDir);
         try {
@@ -299,6 +299,11 @@ public final class ConfigImporter {
             return;
         }
         deleteQuietly(rollbackDir);
+    }
+
+    /** True while a commit's rollback is unfinished; Syncthing must not start then. */
+    public static boolean isRollbackPending(File filesDir) {
+        return new File(new File(filesDir, ROLLBACK_DIR), COMMIT_MARKER).exists();
     }
 
     /**

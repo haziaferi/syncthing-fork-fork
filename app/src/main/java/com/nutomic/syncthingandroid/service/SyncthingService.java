@@ -542,6 +542,21 @@ public class SyncthingService extends Service {
             }
         }
 
+        // A config import whose rollback couldn't finish leaves a mix of old and new files.
+        // Retry the rollback, and never start Syncthing on such a mix.
+        if (ConfigImporter.isRollbackPending(getFilesDir())) {
+            ConfigImporter.recoverInterruptedImport(getFilesDir(), mPreferences);
+            if (ConfigImporter.isRollbackPending(getFilesDir())) {
+                Log.e(TAG, "launchStartupTask: An interrupted config import could not be rolled back. Not starting.");
+                mNotificationHandler.showCrashedNotification(R.string.config_read_failed, "launchStartupTask:importRollbackPending");
+                synchronized (mStateLock) {
+                    onServiceStateChange(State.ERROR);
+                }
+                stopSelf();
+                return;
+            }
+        }
+
         mConfig = new ConfigXml(this);
         try {
             mConfig.loadConfig();
@@ -940,6 +955,11 @@ public class SyncthingService extends Service {
         if (mCurrentState != State.DISABLED) {
             // Shutdown synchronously.
             shutdown(State.DISABLED);
+        }
+
+        // Finish any earlier rollback first; commit refuses to run while one is pending.
+        if (ConfigImporter.isRollbackPending(getFilesDir())) {
+            ConfigImporter.recoverInterruptedImport(getFilesDir(), mPreferences);
         }
 
         // Swap the staged files in; on any failure the previous configuration is put back.
