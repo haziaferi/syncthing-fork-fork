@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration version="27">
+    <folder id="b-id" label="b" path="/storage/emulated/0/b" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false" autoNormalize="true">
+        <filesystemType>basic</filesystemType>
+        <device id="AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA" introducedBy=""></device>
+        <copiers>0</copiers>
+        <hashers>0</hashers>
+        <markerName>.stfolder</markerName>
+    </folder>
+    <folder id="a" label="" path="/storage/emulated/0/a" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="true" autoNormalize="true">
+        <filesystemType>basic</filesystemType>
+        <device id="AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA" introducedBy=""></device>
+        <copiers>0</copiers>
+        <markerName>.stfolder</markerName>
+    </folder>
+    <device id="AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA" name="local-phone" compression="metadata" introducer="false">
+        <address>dynamic</address>
+        <paused>false</paused>
+    </device>
+    <device id="CCCCCCC-CCCCCCC-CCCCCCC-CCCCCCC-CCCCCCC-CCCCCCC-CCCCCCC-CCCCCCC" name="" compression="metadata" introducer="false">
+        <address>dynamic</address>
+        <paused>false</paused>
+    </device>
+    <device id="BBBBBBB-BBBBBBB-BBBBBBB-BBBBBBB-BBBBBBB-BBBBBBB-BBBBBBB-BBBBBBB" name="zeta-laptop" compression="metadata" introducer="false">
+        <address>tcp://192.168.1.10:22000</address>
+        <address>dynamic</address>
+        <paused>false</paused>
+    </device>
+    <gui enabled="true" tls="true" debugging="false">
+        <address>127.0.0.1:8384</address>
+        <user>syncthing</user>
+        <apikey>test-api-key</apikey>
+        <theme>default</theme>
+    </gui>
+    <options>
+        <listenAddress>default</listenAddress>
+        <startBrowser>false</startBrowser>
+        <natEnabled>true</natEnabled>
+        <unackedNotificationID>fsWatcherNotification</unackedNotificationID>
+    </options>
+    <defaults>
+        <folder id="" label="" path="~" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false" autoNormalize="true">
+            <filesystemType>basic</filesystemType>
+            <copiers>0</copiers>
+            <markerName>.stfolder</markerName>
+        </folder>
+    </defaults>
+</configuration>

@@ -147,7 +147,7 @@ public class QuickSettingsTileSchedule extends TileService implements ServiceCon
         String label;
         Resources res = mContext.getResources();
         if (newState == Tile.STATE_INACTIVE || newState == Tile.STATE_ACTIVE) {
-            label = res.getString(R.string.qs_schedule_label_minutes, Integer.parseInt(mPreferences.getString(Constants.PREF_SYNC_DURATION_MINUTES, "5")));
+            label = res.getString(R.string.qs_schedule_label_minutes, RunConditionEvaluator.syncDurationMinutes(mPreferences));
         } else {
             label = res.getString(R.string.qs_schedule_disabled);
         }

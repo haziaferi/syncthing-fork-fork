@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration version="37">
+    <folder id="photos" label="사진 📷 e&#x301;" path="/storage/emulated/0/사진" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="true" autoNormalize="true">
+        <filesystemType>basic</filesystemType>
+        <device id="AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA" introducedBy=""></device>
+        <copiers>0</copiers>
+        <hashers>1</hashers>
+        <markerName>.stfolder</markerName>
+    </folder>
+    <device id="AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA" name="로컬 폰" compression="metadata" introducer="false">
+        <address>dynamic</address>
+    </device>
+    <gui enabled="true" tls="true" debugging="false">
+        <address>127.0.0.1:8384</address>
+        <user>syncthing</user>
+        <apikey>test-api-key</apikey>
+    </gui>
+    <options>
+        <listenAddress>default</listenAddress>
+        <startBrowser>false</startBrowser>
+    </options>
+</configuration>
