@@ -282,29 +282,41 @@ public final class ConfigArchive {
                                      String keepRelPathToZip, String keepPassword) {
         editor.clear();
         for (Map.Entry<String, Object> e : importable.entrySet()) {
-            String key = e.getKey();
-            Object value = e.getValue();
-            Log.i(TAG, "Adding pref \"" + key + "\" to commit ...");
-            if (value instanceof Boolean) {
-                editor.putBoolean(key, (Boolean) value);
-            } else if (value instanceof String) {
-                editor.putString(key, (String) value);
-            } else if (value instanceof Integer) {
-                editor.putInt(key, (Integer) value);
-            } else if (value instanceof Float) {
-                editor.putFloat(key, (Float) value);
-            } else if (value instanceof Long) {
-                editor.putLong(key, (Long) value);
-            } else if (value instanceof Set) {
-                Set<String> strings = new HashSet<>();
-                for (Object o : (Set<?>) value) {
-                    strings.add((String) o);
-                }
-                editor.putStringSet(key, strings);
-            }
+            Log.i(TAG, "Adding pref \"" + e.getKey() + "\" to commit ...");
+            putTyped(editor, e.getKey(), e.getValue());
         }
         editor.putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, keepRelPathToZip);
         editor.putString(Constants.PREF_BACKUP_PASSWORD, keepPassword);
         return editor.commit();
+    }
+
+    /** Replaces all prefs with exactly {@code snapshot} (as returned by {@code getAll()}) and commits. */
+    public static boolean restorePrefs(SharedPreferences prefs, Map<String, ?> snapshot) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.clear();
+        for (Map.Entry<String, ?> e : snapshot.entrySet()) {
+            putTyped(editor, e.getKey(), e.getValue());
+        }
+        return editor.commit();
+    }
+
+    private static void putTyped(SharedPreferences.Editor editor, String key, Object value) {
+        if (value instanceof Boolean) {
+            editor.putBoolean(key, (Boolean) value);
+        } else if (value instanceof String) {
+            editor.putString(key, (String) value);
+        } else if (value instanceof Integer) {
+            editor.putInt(key, (Integer) value);
+        } else if (value instanceof Float) {
+            editor.putFloat(key, (Float) value);
+        } else if (value instanceof Long) {
+            editor.putLong(key, (Long) value);
+        } else if (value instanceof Set) {
+            Set<String> strings = new HashSet<>();
+            for (Object o : (Set<?>) value) {
+                strings.add((String) o);
+            }
+            editor.putStringSet(key, strings);
+        }
     }
 }

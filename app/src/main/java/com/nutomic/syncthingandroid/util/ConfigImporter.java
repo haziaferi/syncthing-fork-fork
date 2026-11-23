@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.util;
 
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -12,7 +13,9 @@ import org.w3c.dom.Element;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +34,10 @@ public final class ConfigImporter {
     public static final String STAGING_DIR = "import-staging";
     public static final String ROLLBACK_DIR = "import-rollback";
     public static final String COMMIT_MARKER = "COMMIT_IN_PROGRESS";
+    /** Prefs as they were before the commit, inside the rollback folder. */
+    public static final String PREFS_SNAPSHOT = "prefs-snapshot.dat";
+    /** Suffix of a rollback entry recording that a live item did not exist before the commit. */
+    public static final String ABSENT_SUFFIX = ".absent";
 
     /** An archive that passed every check, extracted into {@link #dir}. */
     public static final class Staged {
@@ -165,6 +172,158 @@ public final class ConfigImporter {
         }
         if (root.getElementsByTagName("options").getLength() == 0) {
             problems.add(Constants.CONFIG_FILE + " has no <options> element");
+        }
+    }
+
+    /** Moves a file or folder; injectable so tests can fail a chosen move. */
+    public interface Mover {
+        boolean move(File from, File to);
+    }
+
+    /**
+     * Moves each live item aside into {@code filesDir/import-rollback} and the staged item into
+     * its place, then applies the prefs. If anything fails, every moved item is put back and
+     * the prefs are restored, so the live configuration is as before.
+     */
+    public static void commit(Staged staged, File filesDir, SharedPreferences prefs, Mover mover)
+            throws ImportException {
+        Map<String, ?> prefsBefore = new HashMap<>(prefs.getAll());
+        File rollbackDir = new File(filesDir, ROLLBACK_DIR);
+        deleteQuietly(rollbackDir);
+        try {
+            if (!rollbackDir.mkdirs()) {
+                throw new IOException("Cannot create " + rollbackDir);
+            }
+            // The marker is written last, so it never exists without the prefs snapshot.
+            ConfigArchive.writePrefs(prefsBefore, new File(rollbackDir, PREFS_SNAPSHOT));
+            writeEmpty(new File(rollbackDir, COMMIT_MARKER));
+        } catch (IOException e) {
+            deleteQuietly(rollbackDir);
+            deleteQuietly(staged.dir);
+            throw new ImportException("Cannot prepare the rollback folder: " + e.getMessage());
+        }
+
+        List<String> moved = new ArrayList<>();
+        String failure = null;
+        for (String name : itemsToReplace(staged)) {
+            File live = new File(filesDir, name);
+            File stagedItem = new File(staged.dir, name);
+            if (live.exists()) {
+                if (!mover.move(live, new File(rollbackDir, name))) {
+                    failure = "Cannot move " + name + " aside";
+                    break;
+                }
+            } else {
+                try {
+                    writeEmpty(new File(rollbackDir, name + ABSENT_SUFFIX));
+                } catch (IOException e) {
+                    failure = "Cannot record absent " + name + ": " + e.getMessage();
+                    break;
+                }
+            }
+            moved.add(name);
+            if (stagedItem.exists() && !mover.move(stagedItem, live)) {
+                failure = "Cannot move the imported " + name + " into place";
+                break;
+            }
+        }
+
+        if (failure == null) {
+            boolean prefsOk;
+            if (staged.prefs != null) {
+                String relPathToZip = prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "");
+                String backupPassword = prefs.getString(Constants.PREF_BACKUP_PASSWORD, "");
+                prefsOk = ConfigArchive.applyPrefs(prefs.edit(), ConfigArchive.importablePrefs(staged.prefs),
+                        relPathToZip, backupPassword);
+            } else {
+                prefsOk = prefs.edit().remove(Constants.PREF_LOCAL_DEVICE_ID).commit();
+            }
+            if (!prefsOk) {
+                failure = "Cannot save the imported settings";
+            }
+        }
+
+        if (failure != null) {
+            Log.e(TAG, "Import failed, rolling back: " + failure);
+            Collections.reverse(moved);
+            for (String name : moved) {
+                restoreItem(filesDir, rollbackDir, name);
+            }
+            if (!ConfigArchive.restorePrefs(prefs, prefsBefore)) {
+                Log.e(TAG, "Failed to restore the previous settings");
+            }
+            deleteQuietly(rollbackDir);
+            deleteQuietly(staged.dir);
+            throw new ImportException(failure);
+        }
+
+        new File(rollbackDir, COMMIT_MARKER).delete();
+        deleteQuietly(rollbackDir);
+        deleteQuietly(staged.dir);
+    }
+
+    /**
+     * Finishes the rollback of an import interrupted by a crash. Call before anything reads
+     * config.xml. Returns true if an interrupted import was rolled back.
+     */
+    public static boolean recoverInterruptedImport(File filesDir, SharedPreferences prefs) {
+        File rollbackDir = new File(filesDir, ROLLBACK_DIR);
+        File stagingDir = new File(filesDir, STAGING_DIR);
+        boolean interrupted = new File(rollbackDir, COMMIT_MARKER).exists();
+        if (interrupted) {
+            Log.w(TAG, "Rolling back an import that was interrupted");
+            File[] items = rollbackDir.listFiles();
+            if (items != null) {
+                for (File item : items) {
+                    String name = item.getName();
+                    if (name.equals(COMMIT_MARKER) || name.equals(PREFS_SNAPSHOT)) {
+                        continue;
+                    }
+                    restoreItem(filesDir, rollbackDir,
+                            name.endsWith(ABSENT_SUFFIX) ? name.substring(0, name.length() - ABSENT_SUFFIX.length()) : name);
+                }
+            }
+            try {
+                ConfigArchive.restorePrefs(prefs, ConfigArchive.readPrefs(new File(rollbackDir, PREFS_SNAPSHOT)));
+            } catch (IOException | ClassNotFoundException e) {
+                Log.e(TAG, "Cannot restore the settings snapshot", e);
+            }
+        }
+        deleteQuietly(rollbackDir);
+        deleteQuietly(stagingDir);
+        return interrupted;
+    }
+
+    /** Live items an import replaces, in commit order. */
+    private static List<String> itemsToReplace(Staged staged) {
+        List<String> names = new ArrayList<>(Arrays.asList(
+                Constants.CONFIG_FILE, Constants.PUBLIC_KEY_FILE, Constants.PRIVATE_KEY_FILE));
+        if (staged.hasHttpsPair) {
+            names.add(Constants.HTTPS_CERT_FILE);
+            names.add(Constants.HTTPS_KEY_FILE);
+        }
+        // The index is always moved out: Syncthing rebuilds it if the archive has none.
+        names.add(Constants.INDEX_DB_FOLDER);
+        return names;
+    }
+
+    /** Puts {@code name} back as it was before the commit touched it. */
+    private static void restoreItem(File filesDir, File rollbackDir, String name) {
+        File live = new File(filesDir, name);
+        File saved = new File(rollbackDir, name);
+        File absent = new File(rollbackDir, name + ABSENT_SUFFIX);
+        if (!saved.exists() && !absent.exists()) {
+            return;  // Never touched.
+        }
+        deleteQuietly(live);
+        if (saved.exists() && !saved.renameTo(live)) {
+            Log.e(TAG, "Failed to restore " + name);
+        }
+    }
+
+    private static void writeEmpty(File file) throws IOException {
+        if (!file.createNewFile() && !file.isFile()) {
+            throw new IOException("Cannot create " + file);
         }
     }
 

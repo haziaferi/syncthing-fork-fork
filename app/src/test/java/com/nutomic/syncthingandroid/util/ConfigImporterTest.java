@@ -221,6 +221,199 @@ public class ConfigImporterTest {
         assertThat(new File(filesDir, ConfigImporter.STAGING_DIR).exists()).isFalse();
     }
 
+    // Commit and rollback.
+
+    /** A mover that succeeds until its {@code failOn}-th call (1-based), which fails. */
+    private static ConfigImporter.Mover failingOn(int failOn) {
+        int[] calls = {0};
+        return (from, to) -> ++calls[0] != failOn && from.renameTo(to);
+    }
+
+    private static final ConfigImporter.Mover RENAME = File::renameTo;
+
+    private ConfigImporter.Staged stageFull(Map<String, ?> prefsMap) throws Exception {
+        writeLiveSet(source, "new", VALID_CONFIG);
+        archive(prefsMap, ALL);
+        return ConfigImporter.stage(zip, "", filesDir);
+    }
+
+    @Test
+    public void commit_fullExport_replacesEveryLiveItemAndPrefs() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        prefs.edit().putString("stale", "old").putString(Constants.PREF_BACKUP_PASSWORD, "pw").commit();
+        Map<String, Object> exported = new HashMap<>();
+        exported.put("run_on_wifi", false);
+        ConfigImporter.Staged staged = stageFull(exported);
+
+        ConfigImporter.commit(staged, filesDir, prefs, RENAME);
+
+        Map<String, String> after = snapshot(filesDir);
+        assertThat(after.get(Constants.PUBLIC_KEY_FILE)).isEqualTo("cert-new");
+        assertThat(after.get(Constants.HTTPS_KEY_FILE)).isEqualTo("https-key-new");
+        assertThat(after.get(Constants.INDEX_DB_FOLDER + "/main.db")).isEqualTo("db-new");
+        assertThat(prefs.contains("stale")).isFalse();
+        assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
+        assertThat(prefs.getString(Constants.PREF_BACKUP_PASSWORD, null)).isEqualTo("pw");
+    }
+
+    @Test
+    public void commit_threeFileArchive_keepsHttpsPairAndPrefs_removesLocalDeviceId() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        prefs.edit().putString("kept", "yes").putString(Constants.PREF_LOCAL_DEVICE_ID, "OLD-ID").commit();
+        writeLiveSet(source, "new", VALID_CONFIG);
+        archive(null, THREE);
+        ConfigImporter.Staged staged = ConfigImporter.stage(zip, "", filesDir);
+
+        ConfigImporter.commit(staged, filesDir, prefs, RENAME);
+
+        Map<String, String> after = snapshot(filesDir);
+        assertThat(after.get(Constants.PRIVATE_KEY_FILE)).isEqualTo("key-new");
+        assertThat(after.get(Constants.HTTPS_CERT_FILE)).isEqualTo("https-cert-live");
+        assertThat(after.get(Constants.HTTPS_KEY_FILE)).isEqualTo("https-key-live");
+        assertThat(after).doesNotContainKey(Constants.INDEX_DB_FOLDER + "/main.db");
+        assertThat(prefs.getString("kept", null)).isEqualTo("yes");
+        assertThat(prefs.contains(Constants.PREF_LOCAL_DEVICE_ID)).isFalse();
+    }
+
+    @Test
+    public void commit_failsOnThirdMove_restoresEveryLiveFileByteForByte() throws Exception {
+        // A live config distinct from the imported one, so a config left swapped is detected.
+        writeLiveSet(filesDir, "live", VALID_CONFIG.replace("<apikey>k</apikey>", "<apikey>live</apikey>"));
+        prefs.edit().putString("kept", "yes").commit();
+        Map<String, String> before = snapshot(filesDir);
+        Map<String, Object> exported = new HashMap<>();
+        exported.put("run_on_wifi", false);
+        ConfigImporter.Staged staged = stageFull(exported);
+
+        assertThrows(ConfigImporter.ImportException.class,
+                () -> ConfigImporter.commit(staged, filesDir, prefs, failingOn(3)));
+
+        assertThat(snapshot(filesDir)).isEqualTo(before);
+        assertThat(prefs.getAll()).containsExactly("kept", "yes");
+    }
+
+    @Test
+    public void commit_failsWhileApplyingPrefs_restoresFilesAndPrefs() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        prefs.edit().putString("kept", "yes").commit();
+        Map<String, String> before = snapshot(filesDir);
+        Map<String, Object> exported = new HashMap<>();
+        exported.put("run_on_wifi", false);
+        ConfigImporter.Staged staged = stageFull(exported);
+
+        assertThrows(ConfigImporter.ImportException.class,
+                () -> ConfigImporter.commit(staged, filesDir, new CommitFailingPrefs(prefs), RENAME));
+
+        assertThat(snapshot(filesDir)).isEqualTo(before);
+        assertThat(prefs.getAll()).containsExactly("kept", "yes");
+    }
+
+    @Test
+    public void commit_success_leavesNoStagingOrRollbackDir() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        ConfigImporter.Staged staged = stageFull(null);
+
+        ConfigImporter.commit(staged, filesDir, prefs, RENAME);
+
+        assertThat(new File(filesDir, ConfigImporter.STAGING_DIR).exists()).isFalse();
+        assertThat(new File(filesDir, ConfigImporter.ROLLBACK_DIR).exists()).isFalse();
+    }
+
+    @Test
+    public void commit_noPreviousHttpsPair_thenFailure_removesTheNewPair() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        new File(filesDir, Constants.HTTPS_CERT_FILE).delete();
+        new File(filesDir, Constants.HTTPS_KEY_FILE).delete();
+        Map<String, String> before = snapshot(filesDir);
+        ConfigImporter.Staged staged = stageFull(null);
+
+        // config out+in, cert out+in, key out+in, https-cert in, https-key in, index out: fail on the index move-in.
+        assertThrows(ConfigImporter.ImportException.class,
+                () -> ConfigImporter.commit(staged, filesDir, prefs, failingOn(10)));
+
+        assertThat(snapshot(filesDir)).isEqualTo(before);
+    }
+
+    @Test
+    public void recover_withMarker_restoresRollbackItemsAndPrefs() throws Exception {
+        // State after a crash while the commit was moving items: config and cert were swapped,
+        // the key had only been moved out, and a new https-cert was moved into an empty slot.
+        File rollback = new File(filesDir, ConfigImporter.ROLLBACK_DIR);
+        write(new File(rollback, Constants.CONFIG_FILE), "config-old");
+        write(new File(rollback, Constants.PUBLIC_KEY_FILE), "cert-old");
+        write(new File(rollback, Constants.PRIVATE_KEY_FILE), "key-old");
+        write(new File(rollback, Constants.HTTPS_CERT_FILE + ConfigImporter.ABSENT_SUFFIX), "");
+        Map<String, Object> snapshotPrefs = new HashMap<>();
+        snapshotPrefs.put("kept", "yes");
+        ConfigArchive.writePrefs(snapshotPrefs, new File(rollback, ConfigImporter.PREFS_SNAPSHOT));
+        write(new File(rollback, ConfigImporter.COMMIT_MARKER), "");
+        write(new File(filesDir, Constants.CONFIG_FILE), "config-new");
+        write(new File(filesDir, Constants.PUBLIC_KEY_FILE), "cert-new");
+        write(new File(filesDir, Constants.HTTPS_CERT_FILE), "https-cert-new");
+        write(new File(filesDir, Constants.HTTPS_KEY_FILE), "https-key-untouched");
+        write(new File(filesDir, ConfigImporter.STAGING_DIR + "/key.pem"), "key-new");
+        prefs.edit().putString("half", "applied").commit();
+
+        assertThat(ConfigImporter.recoverInterruptedImport(filesDir, prefs)).isTrue();
+
+        Map<String, String> after = snapshot(filesDir);
+        assertThat(after).containsExactly(
+                Constants.CONFIG_FILE, "config-old",
+                Constants.PUBLIC_KEY_FILE, "cert-old",
+                Constants.PRIVATE_KEY_FILE, "key-old",
+                Constants.HTTPS_KEY_FILE, "https-key-untouched");
+        assertThat(prefs.getAll()).containsExactly("kept", "yes");
+    }
+
+    @Test
+    public void recover_withoutMarker_deletesStaleDirs_returnsFalse() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        write(new File(filesDir, ConfigImporter.ROLLBACK_DIR + "/config.xml"), "stale");
+        write(new File(filesDir, ConfigImporter.STAGING_DIR + "/config.xml"), "stale");
+        Map<String, String> live = snapshot(filesDir);
+        live.keySet().removeIf(k -> k.startsWith("import-"));
+
+        assertThat(ConfigImporter.recoverInterruptedImport(filesDir, prefs)).isFalse();
+
+        assertThat(snapshot(filesDir)).isEqualTo(live);
+    }
+
+    /** Delegates to real prefs, but every editor's commit() fails without writing. */
+    private static final class CommitFailingPrefs implements SharedPreferences {
+        private final SharedPreferences real;
+
+        CommitFailingPrefs(SharedPreferences real) {
+            this.real = real;
+        }
+
+        @Override public Map<String, ?> getAll() { return real.getAll(); }
+        @Override public String getString(String k, String d) { return real.getString(k, d); }
+        @Override public java.util.Set<String> getStringSet(String k, java.util.Set<String> d) { return real.getStringSet(k, d); }
+        @Override public int getInt(String k, int d) { return real.getInt(k, d); }
+        @Override public long getLong(String k, long d) { return real.getLong(k, d); }
+        @Override public float getFloat(String k, float d) { return real.getFloat(k, d); }
+        @Override public boolean getBoolean(String k, boolean d) { return real.getBoolean(k, d); }
+        @Override public boolean contains(String k) { return real.contains(k); }
+        @Override public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener l) { }
+        @Override public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener l) { }
+
+        @Override
+        public Editor edit() {
+            return new Editor() {
+                @Override public Editor putString(String k, String v) { return this; }
+                @Override public Editor putStringSet(String k, java.util.Set<String> v) { return this; }
+                @Override public Editor putInt(String k, int v) { return this; }
+                @Override public Editor putLong(String k, long v) { return this; }
+                @Override public Editor putFloat(String k, float v) { return this; }
+                @Override public Editor putBoolean(String k, boolean v) { return this; }
+                @Override public Editor remove(String k) { return this; }
+                @Override public Editor clear() { return this; }
+                @Override public boolean commit() { return false; }
+                @Override public void apply() { }
+            };
+        }
+    }
+
     @Test
     public void stage_removesStaleStagingDir() throws Exception {
         write(new File(filesDir, ConfigImporter.STAGING_DIR + "/stale.txt"), "old");
