@@ -18,6 +18,7 @@ import com.nutomic.syncthingandroid.model.Device;
 import com.nutomic.syncthingandroid.model.Folder;
 import com.nutomic.syncthingandroid.util.CertificateValidator;
 import com.nutomic.syncthingandroid.util.ConfigArchive;
+import com.nutomic.syncthingandroid.util.ConfigImporter;
 import com.nutomic.syncthingandroid.util.ConfigRouter;
 import com.nutomic.syncthingandroid.util.ConfigXml;
 import com.nutomic.syncthingandroid.util.FileUtils;
@@ -541,6 +542,21 @@ public class SyncthingService extends Service {
             }
         }
 
+        // A config import whose rollback couldn't finish leaves a mix of old and new files.
+        // Retry the rollback, and never start Syncthing on such a mix.
+        if (ConfigImporter.isRollbackPending(getFilesDir())) {
+            ConfigImporter.recoverInterruptedImport(getFilesDir(), mPreferences);
+            if (ConfigImporter.isRollbackPending(getFilesDir())) {
+                Log.e(TAG, "launchStartupTask: An interrupted config import could not be rolled back. Not starting.");
+                mNotificationHandler.showCrashedNotification(R.string.config_read_failed, "launchStartupTask:importRollbackPending");
+                synchronized (mStateLock) {
+                    onServiceStateChange(State.ERROR);
+                }
+                stopSelf();
+                return;
+            }
+        }
+
         mConfig = new ConfigXml(this);
         try {
             mConfig.loadConfig();
@@ -923,69 +939,48 @@ public class SyncthingService extends Service {
             return false;
         }
 
+        // Extract and check the whole archive while Syncthing keeps running; nothing live changes.
+        ConfigImporter.Staged staged;
+        try {
+            staged = ConfigImporter.stage(zipFilePath, zipEncryptionPassword, getFilesDir());
+        } catch (ConfigImporter.ImportException e) {
+            for (String problem : e.problems) {
+                Log.e(TAG, "importConfig: " + problem);
+            }
+            return false;
+        }
+
         // Shutdown SyncthingNative.
-        Boolean failSuccess = true;
         Log.d(TAG, "importConfig BEGIN");
         if (mCurrentState != State.DISABLED) {
             // Shutdown synchronously.
             shutdown(State.DISABLED);
         }
 
-        // Remove database folder if it exists.
-        File databasePath = Constants.getIndexDbFolder(this);
-        if (databasePath.exists()) {
-            Log.d(TAG, "importConfig: Clearing index database");
+        // Finish any earlier rollback first; commit refuses to run while one is pending.
+        if (ConfigImporter.isRollbackPending(getFilesDir())) {
+            ConfigImporter.recoverInterruptedImport(getFilesDir(), mPreferences);
+        }
+
+        // Swap the staged files in; on any failure the previous configuration is put back.
+        boolean success;
+        try {
+            ConfigImporter.commit(staged, getFilesDir(), mPreferences, File::renameTo);
+            success = true;
+        } catch (ConfigImporter.ImportException e) {
+            Log.e(TAG, "importConfig: " + e.getMessage() + ". The previous configuration was restored.");
+            success = false;
+        }
+
+        if (success) {
             try {
-                FileUtils.deleteDirectoryRecursively(databasePath);
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to delete directory '" + databasePath.getAbsolutePath() + "'" + e);
+                cleanupImportedFolderDatabases();
+            } catch (Exception e) {
+                Log.e(TAG, "importConfig: Failed to cleanup invalid folder databases", e);
             }
         }
 
-        // Decompress zip file.
-        try {
-            ConfigArchive.extractAll(zipFilePath, zipEncryptionPassword, this.getFilesDir());
-        } catch (IOException e) {
-            Log.e(TAG, "importConfig: Failed to extract zip, " + e.getMessage());
-            failSuccess = false;
-        }
-
-        // Check if necessary files are present after extraction.
-        List<File> checkPaths = Arrays.asList(
-            Constants.getConfigFile(this),
-
-            Constants.getPrivateKeyFile(this),
-            Constants.getPublicKeyFile(this),
-
-            Constants.getHttpsCertFile(this),
-            Constants.getHttpsKeyFile(this),
-
-            Constants.getSharedPrefsFile(this)
-        );
-        for (final File checkPath : checkPaths) {
-            if (!checkPath.exists()) {
-                Log.e(TAG, "importConfig: Missing file after extraction [" + checkPath.getName() + "]");
-                failSuccess = false;
-            }
-        }
-        
-        // Import shared preferences.
-        File sharedPreferencesFile = Constants.getSharedPrefsFile(this);
-        if (sharedPreferencesFile.exists()) {
-            Log.d(TAG, "importConfig: Importing shared preferences");
-            failSuccess = failSuccess && importConfigSharedPrefs(sharedPreferencesFile);
-            sharedPreferencesFile.delete();
-        } else {
-            mPreferences.edit().remove(Constants.PREF_LOCAL_DEVICE_ID).apply();
-        }
-
-        try {
-            cleanupImportedFolderDatabases();
-        } catch (Exception e) {
-            Log.e(TAG, "importConfig: Failed to cleanup invalid folder databases", e);
-        }
-
-        // Start syncthing after import if run conditions apply.
+        // Start syncthing again if run conditions apply, with the imported or the restored config.
         if (mLastDeterminedShouldRun) {
             Handler mainLooper = new Handler(Looper.getMainLooper());
             Runnable launchStartupTaskRunnable = new Runnable() {
@@ -996,7 +991,7 @@ public class SyncthingService extends Service {
             };
             mainLooper.post(launchStartupTaskRunnable);
         }
-        return failSuccess;
+        return success;
     }
 
     /**
@@ -1301,17 +1296,6 @@ public class SyncthingService extends Service {
                 new SyncthingRunnable(this, SyncthingRunnable.Command.resetdatabase).run();
                 break;
             }
-        }
-    }
-
-    private boolean importConfigSharedPrefs(final File file) {
-        try {
-            // Nothing is changed if this fails, including when the file holds a class
-            // outside the allow-list. The current backup location and password are kept.
-            return ConfigArchive.importPrefs(file, mPreferences);
-        } catch (IOException | ClassNotFoundException e) {
-            Log.e(TAG, "importConfig: Failed to import SharedPreferences", e);
-            return false;
         }
     }
 

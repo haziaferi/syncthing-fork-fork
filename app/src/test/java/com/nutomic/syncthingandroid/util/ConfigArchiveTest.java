@@ -144,6 +144,56 @@ public class ConfigArchiveTest {
     }
 
     @Test
+    public void check_missingSeveralEntries_logsEveryOne() throws Exception {
+        zip.getParentFile().mkdirs();
+        new File(source, Constants.PUBLIC_KEY_FILE).delete();
+        new File(source, Constants.PRIVATE_KEY_FILE).delete();
+        ConfigArchive.writeZip(zip, includes(), "");
+        org.robolectric.shadows.ShadowLog.clear();
+
+        assertThat(ConfigArchive.check(zip, "", REQUIRED, scratch)).isEqualTo(Check.MISSING_REQUIRED_ENTRY);
+
+        StringBuilder logged = new StringBuilder();
+        for (org.robolectric.shadows.ShadowLog.LogItem item : org.robolectric.shadows.ShadowLog.getLogsForTag("ConfigArchive")) {
+            logged.append(item.msg).append('\n');
+        }
+        assertThat(logged.toString()).contains(Constants.PUBLIC_KEY_FILE);
+        assertThat(logged.toString()).contains(Constants.PRIVATE_KEY_FILE);
+    }
+
+    @Test
+    public void unzipParameters_neverCreateSymbolicLinks() {
+        // zip4j's default is true; creating links crashes the app on API 23-25.
+        assertThat(new net.lingala.zip4j.model.UnzipParameters().isExtractSymbolicLinks()).isTrue();
+        assertThat(ConfigArchive.unzipParameters().isExtractSymbolicLinks()).isFalse();
+    }
+
+    @Test
+    public void check_certEntryIsASymlink_leavesNothingInScratch() throws Exception {
+        File victim = new File(tmp.getRoot(), "victim.txt");
+        write(victim, "untouched");
+        File linkSource = tmp.newFolder("linksrc");
+        File link = new File(linkSource, Constants.PUBLIC_KEY_FILE);
+        try {
+            Files.createSymbolicLink(link.toPath(), victim.toPath());
+        } catch (Exception e) {
+            org.junit.Assume.assumeNoException("host can't create symbolic links", e);
+        }
+        net.lingala.zip4j.model.ZipParameters params = new net.lingala.zip4j.model.ZipParameters();
+        params.setSymbolicLinkAction(net.lingala.zip4j.model.ZipParameters.SymbolicLinkAction.INCLUDE_LINK_ONLY);
+        zip.getParentFile().mkdirs();
+        ZipFile z = new ZipFile(zip);
+        z.addFile(new File(source, Constants.CONFIG_FILE));
+        z.addFile(new File(source, Constants.PRIVATE_KEY_FILE));
+        z.addFile(link, params);
+
+        ConfigArchive.check(zip, "", REQUIRED, scratch);
+
+        assertThat(scratch.list()).isEmpty();
+        assertThat(new String(Files.readAllBytes(victim.toPath()), StandardCharsets.UTF_8)).isEqualTo("untouched");
+    }
+
+    @Test
     public void check_neverWritesOutsideScratchDir() throws Exception {
         zip.getParentFile().mkdirs();
         ConfigArchive.writeZip(zip, includes(), "");
@@ -248,44 +298,17 @@ public class ConfigArchiveTest {
     }
 
     @Test
-    public void importPrefs_rejectedFile_leavesCurrentPrefsUntouched() throws Exception {
+    public void restorePrefs_replacesEverythingWithTheSnapshot() {
         SharedPreferences prefs = realPrefs();
-        prefs.edit().putString("current", "kept").commit();
-        Map<String, Object> crafted = new HashMap<>();
-        crafted.put("evil", new java.util.ArrayList<>());
-        File file = serialise(crafted);
+        prefs.edit().putString("stale", "old").commit();
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("kept", "yes");
+        snapshot.put("flag", true);
+        snapshot.put(Constants.PREF_WIFI_SSID_WHITELIST, new HashSet<>(Arrays.asList("\"Home\"")));
 
-        try {
-            ConfigArchive.importPrefs(file, prefs);
-            throw new AssertionError("Crafted file was accepted");
-        } catch (java.io.InvalidClassException expected) {
-            // Rejected before any pref was changed.
-        }
-        assertThat(prefs.getString("current", null)).isEqualTo("kept");
-    }
+        assertThat(ConfigArchive.restorePrefs(prefs, snapshot)).isTrue();
 
-    @Test
-    public void importPrefs_validFile_replacesPrefsAndKeepsBackupLocation() throws Exception {
-        File file = tmp.newFile();
-        Map<String, Object> exported = new HashMap<>();
-        exported.put("run_on_wifi", false);
-        exported.put(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "from/backup.zip");
-        exported.put(Constants.PREF_BACKUP_PASSWORD, "from-backup");
-        ConfigArchive.writePrefs(exported, file);
-
-        SharedPreferences prefs = realPrefs();
-        prefs.edit()
-                .putString("stale", "old")
-                .putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "current/config.zip")
-                .putString(Constants.PREF_BACKUP_PASSWORD, "current-pw")
-                .commit();
-
-        assertThat(ConfigArchive.importPrefs(file, prefs)).isTrue();
-
-        assertThat(prefs.contains("stale")).isFalse();
-        assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
-        assertThat(prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null)).isEqualTo("current/config.zip");
-        assertThat(prefs.getString(Constants.PREF_BACKUP_PASSWORD, null)).isEqualTo("current-pw");
+        assertThat(prefs.getAll()).isEqualTo(snapshot);
     }
 
     @Test

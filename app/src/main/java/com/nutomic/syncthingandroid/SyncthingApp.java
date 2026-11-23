@@ -2,14 +2,18 @@ package com.nutomic.syncthingandroid;
 
 import android.app.Application;
 import android.os.StrictMode;
+import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
+import com.nutomic.syncthingandroid.util.ConfigImporter;
 import com.nutomic.syncthingandroid.util.RecentTasksController;
 
 import javax.inject.Inject;
 
 public class SyncthingApp extends Application {
+
+    private static final String TAG = "SyncthingApp";
 
     @Inject DaggerComponent mComponent;
 
@@ -19,6 +23,11 @@ public class SyncthingApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // Undo a config import a crash interrupted, before anything in the app reads config.xml.
+        if (ConfigImporter.recoverInterruptedImport(getFilesDir(), PreferenceManager.getDefaultSharedPreferences(this))) {
+            Log.w(TAG, "Rolled back a config import that was interrupted.");
+        }
 
         DaggerDaggerComponent.builder()
                 .syncthingModule(new SyncthingModule(this))

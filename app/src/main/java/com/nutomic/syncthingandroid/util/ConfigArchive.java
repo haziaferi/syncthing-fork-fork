@@ -7,6 +7,7 @@ import com.nutomic.syncthingandroid.service.Constants;
 
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.model.UnzipParameters;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.AesKeyStrength;
 import net.lingala.zip4j.model.enums.CompressionLevel;
@@ -129,14 +130,19 @@ public final class ConfigArchive {
                 Log.e(TAG, "ZIP file is not encrypted, but a password was specified.");
                 return Check.NOT_ENCRYPTED_BUT_PASSWORD_SET;
             }
+            // Log every missing entry, so one attempt shows all that needs fixing.
+            boolean missing = false;
             for (String entry : requiredEntries) {
                 if (zipFile.getFileHeader(entry) == null) {
                     Log.e(TAG, "Required file not found inside zip [" + entry + "]");
-                    return Check.MISSING_REQUIRED_ENTRY;
+                    missing = true;
                 }
             }
+            if (missing) {
+                return Check.MISSING_REQUIRED_ENTRY;
+            }
             String scratch = scratchDir.getAbsolutePath();
-            zipFile.extractFile(Constants.PUBLIC_KEY_FILE, scratch);
+            zipFile.extractFile(Constants.PUBLIC_KEY_FILE, scratch, unzipParameters());
             new File(scratchDir, Constants.PUBLIC_KEY_FILE).delete();
         } catch (ZipException e) {
             Log.e(TAG, "Failed to open zip, " + e.getMessage());
@@ -145,8 +151,23 @@ public final class ConfigArchive {
         return Check.OK;
     }
 
+    /**
+     * Extracts every entry. Symbolic link entries are never created as links, so an archive
+     * can't plant a link pointing outside {@code destDir}.
+     */
     public static void extractAll(File zip, String password, File destDir) throws IOException {
-        open(zip, password).extractAll(destDir.getAbsolutePath());
+        open(zip, password).extractAll(destDir.getAbsolutePath(), unzipParameters());
+    }
+
+    /**
+     * Settings for every extraction from a backup: symbolic link entries are skipped. zip4j
+     * creates them by default, which would let an archive plant a link, and on API 23-25
+     * (no java.nio.file) crash the app.
+     */
+    static UnzipParameters unzipParameters() {
+        UnzipParameters unzipParameters = new UnzipParameters();
+        unzipParameters.setExtractSymbolicLinks(false);
+        return unzipParameters;
     }
 
     /** Serialises prefs the way every earlier release did, so old backups stay readable. */
@@ -261,20 +282,6 @@ public final class ConfigArchive {
     }
 
     /**
-     * Replaces the prefs with those in a backup's prefs file, keeping the current backup
-     * location and password. The file is read completely before anything changes, so a
-     * rejected or unreadable file leaves the prefs untouched.
-     *
-     * @return the result of the commit
-     */
-    public static boolean importPrefs(File file, SharedPreferences prefs) throws IOException, ClassNotFoundException {
-        Map<String, Object> raw = readPrefs(file);
-        String relPathToZip = prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "");
-        String backupPassword = prefs.getString(Constants.PREF_BACKUP_PASSWORD, "");
-        return applyPrefs(prefs.edit(), importablePrefs(raw), relPathToZip, backupPassword);
-    }
-
-    /**
      * Replaces all prefs with {@code importable}, then restores the current backup location
      * and password, and commits.
      */
@@ -282,29 +289,41 @@ public final class ConfigArchive {
                                      String keepRelPathToZip, String keepPassword) {
         editor.clear();
         for (Map.Entry<String, Object> e : importable.entrySet()) {
-            String key = e.getKey();
-            Object value = e.getValue();
-            Log.i(TAG, "Adding pref \"" + key + "\" to commit ...");
-            if (value instanceof Boolean) {
-                editor.putBoolean(key, (Boolean) value);
-            } else if (value instanceof String) {
-                editor.putString(key, (String) value);
-            } else if (value instanceof Integer) {
-                editor.putInt(key, (Integer) value);
-            } else if (value instanceof Float) {
-                editor.putFloat(key, (Float) value);
-            } else if (value instanceof Long) {
-                editor.putLong(key, (Long) value);
-            } else if (value instanceof Set) {
-                Set<String> strings = new HashSet<>();
-                for (Object o : (Set<?>) value) {
-                    strings.add((String) o);
-                }
-                editor.putStringSet(key, strings);
-            }
+            Log.i(TAG, "Adding pref \"" + e.getKey() + "\" to commit ...");
+            putTyped(editor, e.getKey(), e.getValue());
         }
         editor.putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, keepRelPathToZip);
         editor.putString(Constants.PREF_BACKUP_PASSWORD, keepPassword);
         return editor.commit();
+    }
+
+    /** Replaces all prefs with exactly {@code snapshot} (as returned by {@code getAll()}) and commits. */
+    public static boolean restorePrefs(SharedPreferences prefs, Map<String, ?> snapshot) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.clear();
+        for (Map.Entry<String, ?> e : snapshot.entrySet()) {
+            putTyped(editor, e.getKey(), e.getValue());
+        }
+        return editor.commit();
+    }
+
+    private static void putTyped(SharedPreferences.Editor editor, String key, Object value) {
+        if (value instanceof Boolean) {
+            editor.putBoolean(key, (Boolean) value);
+        } else if (value instanceof String) {
+            editor.putString(key, (String) value);
+        } else if (value instanceof Integer) {
+            editor.putInt(key, (Integer) value);
+        } else if (value instanceof Float) {
+            editor.putFloat(key, (Float) value);
+        } else if (value instanceof Long) {
+            editor.putLong(key, (Long) value);
+        } else if (value instanceof Set) {
+            Set<String> strings = new HashSet<>();
+            for (Object o : (Set<?>) value) {
+                strings.add((String) o);
+            }
+            editor.putStringSet(key, strings);
+        }
     }
 }
