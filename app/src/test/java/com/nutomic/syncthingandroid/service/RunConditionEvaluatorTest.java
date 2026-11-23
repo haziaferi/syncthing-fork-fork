@@ -100,6 +100,54 @@ public class RunConditionEvaluatorTest {
         assertThat(d.shouldRun).isTrue();
     }
 
+    /**
+     * Pins the order of the blocking checks: with every one of them failing, each step clears
+     * the reported one and the next check in line must be the one reported.
+     */
+    @Test
+    public void blockingChecks_areEvaluatedInOrder() {
+        prefs.edit()
+                .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP)
+                .putBoolean(Constants.PREF_RUN_ON_TIME_SCHEDULE, true)
+                .putString(Constants.PREF_SLEEP_INTERVAL_MINUTES, "60")
+                .putLong(Constants.PREF_LAST_RUN_TIME, NOW - 10 * MINUTE)
+                .putString(Constants.PREF_POWER_SOURCE, Constants.PowerSource.CHARGER)
+                .putBoolean(Constants.PREF_RESPECT_BATTERY_SAVING, true)
+                .putBoolean(Constants.PREF_RESPECT_MASTER_SYNC, true)
+                .commit();
+        DeviceConditions device = device()
+                .charging(false).powerSaving(true).masterSyncEnabled(false)
+                .transport(Transport.WIFI).build();
+
+        assertThat(decide(device).reasons).containsExactly(Reason.FORCE_STOP);
+
+        prefs.edit().putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_NO_FORCE_START_STOP).commit();
+        assertThat(decide(device).reasons).containsExactly(Reason.NOT_WITHIN_TIME_FRAME);
+
+        prefs.edit().putBoolean(Constants.PREF_RUN_ON_TIME_SCHEDULE, false).commit();
+        assertThat(decide(device).reasons).containsExactly(Reason.NOT_CHARGING);
+
+        prefs.edit().putString(Constants.PREF_POWER_SOURCE, Constants.PowerSource.CHARGER_BATTERY).commit();
+        assertThat(decide(device).reasons).containsExactly(Reason.NOT_WHILE_POWER_SAVING);
+
+        prefs.edit().putBoolean(Constants.PREF_RESPECT_BATTERY_SAVING, false).commit();
+        assertThat(decide(device).reasons).containsExactly(Reason.NOT_WHILE_AUTO_SYNC_DATA_DISABLED);
+
+        prefs.edit().putBoolean(Constants.PREF_RESPECT_MASTER_SYNC, false).commit();
+        Decision last = decide(device);
+        assertThat(last.shouldRun).isTrue();
+        assertThat(last.reasons).contains(Reason.ON_WIFI);
+    }
+
+    /** Wi-Fi is checked before flight mode, so a Wi-Fi match never reports flight mode. */
+    @Test
+    public void wifiMatch_winsOverFlightMode() {
+        prefs.edit().putBoolean(Constants.PREF_RUN_IN_FLIGHT_MODE, true).commit();
+        Decision d = decide(wifi());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).doesNotContain(Reason.ON_FLIGHT_MODE);
+    }
+
     @Test
     public void powerSourceChargerOnly_onBattery_doesNotRun() {
         prefs.edit().putString(Constants.PREF_POWER_SOURCE, Constants.PowerSource.CHARGER).commit();

@@ -34,6 +34,38 @@ public class RunConditionExplanationTest {
         return new Decision(false, Arrays.asList(reasons), false, minutes);
     }
 
+    /** Reasons the pre-refactor code prefixed with "\n" (taken from RunConditionMonitor at 71fca13c). */
+    private static final java.util.Set<String> NEWLINE_BEFORE = new java.util.HashSet<>(Arrays.asList(
+            "reason_location_unavailable", "reason_not_nonmetered_wifi",
+            "reason_not_nonroaming_mobile_data", "reason_not_on_whitelisted_wifi",
+            "reason_not_on_wifi", "reason_on_flight_mode", "reason_on_metered_nonmetered_wifi",
+            "reason_on_nonmetered_wifi", "reason_on_nonroaming_mobile_data",
+            "reason_on_roaming_nonroaming_mobile_data", "reason_on_whitelisted_wifi",
+            "reason_on_wifi", "reason_wifi_disallowed"));
+
+    /** Reasons the pre-refactor code added without a newline. */
+    private static final java.util.Set<String> NO_NEWLINE = new java.util.HashSet<>(Arrays.asList(
+            "reason_force_start", "reason_force_stop", "reason_mobile_data_disallowed",
+            "reason_not_charging", "reason_not_on_battery_power", "reason_not_on_mobile_data",
+            "reason_not_while_auto_sync_data_disabled", "reason_not_while_power_saving",
+            "reason_on_mobile_data"));
+
+    @Test
+    public void everyReason_hasTheLegacyLineBreak() {
+        int checked = 0;
+        for (Reason reason : Reason.values()) {
+            if (reason == Reason.NOT_WITHIN_TIME_FRAME) {
+                continue;  // Formatted with minutes; covered by timeFrame_usesPluralsAndZeroMinuteString.
+            }
+            String name = res.getResourceEntryName(reason.stringRes);
+            assertThat(NEWLINE_BEFORE.contains(name) || NO_NEWLINE.contains(name)).isTrue();
+            String expected = (NEWLINE_BEFORE.contains(name) ? "\n" : "") + res.getString(reason.stringRes);
+            assertThat(RunConditionMonitor.formatExplanation(res, decision(0, reason))).isEqualTo(expected);
+            checked++;
+        }
+        assertThat(checked).isEqualTo(NEWLINE_BEFORE.size() + NO_NEWLINE.size());
+    }
+
     @Test
     public void forceStart_isExactlyForceStartString() {
         assertThat(RunConditionMonitor.formatExplanation(res, decision(0, Reason.FORCE_START)))
