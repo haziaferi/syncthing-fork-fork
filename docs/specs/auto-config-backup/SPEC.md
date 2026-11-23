@@ -23,6 +23,7 @@ Kinds: O owner rule · D decided · I inherited · A assumed · Q open.
 | D-R11 | Retention | 3. Storage |
 | D-R12 | File names | 3. Storage |
 | D-R13 | Trigger | 4. When a backup runs |
+| D-R22 | Runtime preference keys | 4. When a backup runs |
 | D-R14 | No backup during import or export | 4. When a backup runs |
 | D-R15 | Off by default | 4. When a backup runs |
 | D-R16 | Feature settings and status | 5. Status and restore |
@@ -41,7 +42,7 @@ Kinds: O owner rule · D decided · I inherited · A assumed · Q open.
 | backup folder | the folder automatic backups are written to, relative to shared storage |
 | backup password | the value of `Constants.PREF_BACKUP_PASSWORD`, shared by manual export, import and automatic backups |
 | included files | the files an automatic backup holds, listed in R03 |
-| content hash | a SHA-256 over the included files' names and bytes, in a fixed order |
+| content hash | a SHA-256 over the included files' names and bytes in a fixed order, with the app settings taken without the runtime keys of R22 |
 | shared storage | `Environment.getExternalStorageDirectory()`, usually `/storage/emulated/0` |
 
 ## 1. Purpose and jobs
@@ -107,7 +108,7 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 **Why:** One import path serves both, and the all-or-nothing import (merged 2026-11-23, `b32d7772`) already validates and rolls back.
 
-**Acceptance:** A unit test passes a fresh automatic backup to `ConfigImporter.stage()` with the backup password and gets a `Staged` result with no problems.
+**Acceptance:** A unit test passes a fresh automatic backup to `ConfigImporter.stage()` with the backup password and gets a `Staged` result, with no `ImportException` thrown.
 
 **Since:** 2026-11-23 · builder · own words
 
@@ -204,11 +205,13 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 ### D-R12 · File names
 
-**Rule:** An automatic backup is named `config-auto-<stamp>.zip`. `<stamp>` is the local time the backup started, as `yyyyMMdd-HHmmss`. If that name exists, `-2`, `-3` and so on are added before `.zip`.
+**Rule:** An automatic backup is named `config-auto-<stamp>.zip`, where `<stamp>` is the UTC time the backup started, as `yyyyMMdd'T'HHmmss'Z'`; if that name exists, `-2`, `-3` and so on are added before `.zip`. Retention and the restore list order backups by the parsed stamp, then by that number, never by the raw file name.
 
-**Why:** Names that sort by time let retention and the restore list order backups without reading them. The `config-auto-` prefix keeps them apart from manual exports.
+**Why:** A UTC stamp never repeats or runs backwards, while local time repeats an hour when daylight saving ends: a backup named by local time could then sort as older than the one before it, and retention would delete the newest backup. The raw name sorts `-2` before the unsuffixed name (`-` sorts before `.`), so it is not the order. The `config-auto-` prefix keeps automatic backups apart from manual exports.
 
-**Acceptance:** A unit test checks the name for a fixed clock, and a second backup in the same second gets `-2`.
+**Acceptance:** Unit tests: the name for a fixed clock; a second backup in the same second gets `-2` and orders after the first; with the clock set back an hour, the new backup still orders newest and survives retention.
+
+**Not:** Local time in the name: see Why. The restore list shows the stamp in local time.
 
 **Since:** 2026-11-23 · builder · own words
 
@@ -216,9 +219,9 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 ### D-R13 · Trigger
 
-**Rule:** A backup runs 10 minutes after the last change, through a one-off `JobScheduler` job that each change schedules again, and is skipped when the content hash equals `auto_backup_last_hash`. A failure records its time and reason (R16) and leaves the existing backups untouched.
+**Rule:** A backup runs 10 minutes after the last change, but no later than 60 minutes after the first change it has not yet covered, through a one-off `JobScheduler` job that each change schedules again within that limit. It is skipped when the content hash equals `auto_backup_last_hash`. A failure records its time and reason (R16) and leaves the existing backups untouched.
 
-**Why:** A change trigger keeps the newest backup current without writing identical copies every day, and needs no interval setting. The 10-minute wait turns a burst of edits into one backup. The app already schedules work with `JobScheduler` (`JobUtils.java`).
+**Why:** A change trigger keeps the newest backup current without writing identical copies every day, and needs no interval setting. The 10-minute wait turns a burst of edits into one backup. The 60-minute limit stops a steady stream of changes from pushing the backup back forever. The app already schedules work with `JobScheduler` (`JobUtils.java`).
 
 **Values:**
 
@@ -226,7 +229,7 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 |---|---|
 | `ConfigSaved` event from Syncthing (`EventProcessor.java:113`) | yes |
 | `ConfigXml.saveChanges()` while Syncthing is stopped | yes |
-| a shared-preferences change | yes, except the status keys of R16 |
+| a shared-preferences change | yes, except the runtime keys of R22 |
 | a failure, from the table below | no |
 
 | Failure | Recorded reason |
@@ -236,11 +239,36 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 | out of space while writing | out of space |
 | R10's check fails | backup failed its check |
 
-**Acceptance:** Unit tests: three changes within 10 minutes schedule one job; a run with an unchanged hash writes nothing; each failure row records its reason and leaves the existing backups as they were.
+**Acceptance:** Unit tests: three changes within 10 minutes schedule one job; a change every 5 minutes still runs the job within 60 minutes of the first; a run with an unchanged hash writes nothing; each failure row records its reason and leaves the existing backups as they were.
 
 **Not:** A daily, weekly or monthly interval, as researchxxl/syncthing-android#240 and #413 asked: it leaves up to a full period of changes unprotected and writes identical copies. Backing up inside `ConfigXml.saveChanges()` itself: it runs on the caller's thread, often the UI.
 
 **Since:** 2026-11-23 · owner · agreed rewording
+
+### D-R22 · Runtime preference keys
+
+**Rule:** The keys below are written by the app while it runs, not by the user. A change to one never counts as a change (R13), and the content hash leaves them out. They are still written into the backup, as the manual export writes them.
+
+**Why:** Without this list the trigger never settles: `last_sync_id` is written after every batch of Syncthing events, so each would push the job back and change the hash, and the skip-unchanged check would never skip.
+
+**Values:**
+
+| Key | Constant | Written by |
+|---|---|---|
+| `last_sync_id` | `PREF_EVENT_PROCESSOR_LAST_SYNC_ID` | `EventProcessor.java:254`, after each event batch |
+| `last_run_time` | `PREF_LAST_RUN_TIME` | `RunConditionMonitor.java:167` and others |
+| `app_start_counter` | `PREF_APP_START_COUNTER` | `RestApi.java:259` |
+| `device_lastseen_` + device ID | `PREF_CACHE_DEVICE_LASTSEEN_PREFIX` | `RestApi.java:938` |
+| `debug_facilities_available` | `PREF_DEBUG_FACILITIES_AVAILABLE` | `RestApi.java:446` |
+| `lastBinaryVersion` | `PREF_LAST_BINARY_VERSION` | `RestApi.java:452` |
+| `btnStateForceStartStop` | `PREF_BTNSTATE_FORCE_START_STOP` | `QuickSettingsTileForce.java:76`, `AppConfigReceiver.java:95` |
+| the status keys of R16 | `auto_backup_last_*` | the backup job |
+
+**Evidence:** Found by searching `app/src/main/java` for `.edit()` outside the settings screens, 2026-11-23. A key added later that the app writes while running must join this table.
+
+**Acceptance:** A unit test writes each key in the table and finds no job scheduled and the content hash unchanged; writing a user setting such as `PREF_RUN_ON_WIFI` schedules the job.
+
+**Since:** 2026-11-23 · builder · own words
 
 ### D-R14 · No backup during import or export
 
@@ -324,7 +352,7 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 | Level | Covers | Rules | Runs |
 |---|---|---|---|
-| Unit (Robolectric) | contents, layout, write-check-rename, names, retention, skip-unchanged, import exclusion, password changes | R03 R04 R10 R11 R12 R13 R14 R16 R19 | every commit, in CI's `testDebugUnitTest` |
+| Unit (Robolectric) | contents, layout, encryption, folder, write-check-rename, names, retention, trigger, skip-unchanged, runtime keys, off by default, import exclusion, password changes | R03 R04 R05 R09 R10 R11 R12 R13 R14 R15 R16 R19 R22 | every commit, in CI's `testDebugUnitTest` |
 | Device (`.debug` build on the owner's phone, release untouched) | backup while syncing, restore onto a cleared debug install | R07 R17 | once before merge |
 
 **Acceptance:** CI's Build / Build Debug check passes on the pull request, and the device run is logged in the plan's progress section.
@@ -334,15 +362,16 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 ## Acceptance list
 
 - R03 · Included files: A unit test opens a fresh automatic backup and finds exactly the entries of this table for a device with and without the HTTPS pair, and no `index-v2/` entry.
-- R04 · Same layout as the manual export: A unit test passes a fresh automatic backup to `ConfigImporter.stage()` with the backup password and gets a `Staged` result with no problems.
+- R04 · Same layout as the manual export: A unit test passes a fresh automatic backup to `ConfigImporter.stage()` with the backup password and gets a `Staged` result, with no `ImportException` thrown.
 - R05 · Encryption of the private key: A unit test opens a fresh automatic backup without the password and fails, and opens it with the password and succeeds. Turning the feature on with no password set is refused.
 - R06 · Settings file format: Covered by R04's test: the import reads the settings entry of a fresh automatic backup.
 - R07 · Backing up while Syncthing runs: A device test changes a folder setting with Syncthing running. The automatic backup that follows leaves the service state `ACTIVE` throughout, as the service's state log shows.
 - R09 · Backup folder: A unit test with the default setting writes the backup under `backups/syncthing/auto/`, and with a changed setting under the new folder.
 - R10 · Writing and checking a backup: Unit tests make step 2 fail (a truncated archive, a malformed `config.xml`). Each time, no new `.zip` appears and the existing backups are unchanged.
 - R11 · Retention: A unit test with 6 backups, a day-old `.tmp` file and a manual `config.zip` in the folder writes a new backup. 5 backups remain, the oldest two and the `.tmp` file are gone, and `config.zip` is untouched. A failed backup deletes nothing.
-- R12 · File names: A unit test checks the name for a fixed clock, and a second backup in the same second gets `-2`.
-- R13 · Trigger: Unit tests: three changes within 10 minutes schedule one job; a run with an unchanged hash writes nothing; each failure row records its reason and leaves the existing backups as they were.
+- R12 · File names: Unit tests: the name for a fixed clock; a second backup in the same second gets `-2` and orders after the first; with the clock set back an hour, the new backup still orders newest and survives retention.
+- R13 · Trigger: Unit tests: three changes within 10 minutes schedule one job; a change every 5 minutes still runs the job within 60 minutes of the first; a run with an unchanged hash writes nothing; each failure row records its reason and leaves the existing backups as they were.
+- R22 · Runtime preference keys: A unit test writes each key in the table and finds no job scheduled and the content hash unchanged; writing a user setting such as `PREF_RUN_ON_WIFI` schedules the job.
 - R14 · No backup during import or export: A unit test with a pending rollback marker runs the backup job. It writes no file and schedules itself again.
 - R15 · Off by default: A unit test reads `auto_backup_enabled` on fresh preferences and gets false; no job is scheduled until it is turned on.
 - R16 · Feature settings and status: A unit test imports an archive whose settings hold the status keys, and the device's own status values are unchanged.

@@ -30,3 +30,8 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-23 · R13 · kind · Q → D, 10 min after last change, skip unchanged · owner
 - 2026-11-23 · R15 · kind · Q → D, off by default · owner
 - 2026-11-23 · R17 · kind · Q → D, items in Import & Export screen · owner
+- 2026-11-23 · R04 · changed · acceptance names the ImportException · builder
+- 2026-11-23 · R12 · changed · UTC stamp, order by parsed stamp · builder
+- 2026-11-23 · R13 · changed · 60-minute limit, runtime keys ignored · owner
+- 2026-11-23 · R22 · added · runtime preference keys · builder
+- 2026-11-23 · R18 · changed · unit tests cover R05 R09 R15 R22 · builder
