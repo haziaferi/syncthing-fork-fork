@@ -9,10 +9,17 @@ unchanged, so upstream syncs stay clean.
 - `main` is protected by the `main` ruleset:
   - every change goes through a pull request;
   - force pushes and deleting `main` are blocked;
-  - a merge is blocked while CodeQL reports an error-level or high/critical-severity alert.
-- The build and the unit tests are **not** required checks, so GitHub allows a merge
-  while they are red or still running. Wait for every check on the PR to pass before
-  merging.
+  - a merge is blocked while CodeQL reports an error-level or high/critical-severity alert;
+  - a merge is blocked until `Build / Build Debug` passes (build, lint and unit tests).
+    Only a run from the GitHub Actions app counts. The branch need not be up to date
+    with `main`.
+- `Build / Build Debug` is the only required check, on purpose. `Sign / Sign debug`
+  needs secrets that PRs from forks and Dependabot don't get, and the `Analyze (…)` job
+  names change with the language list, so requiring either would block PRs for reasons
+  unrelated to the code. Still wait for every check to pass before merging.
+- A PR opened by a workflow with the default `GITHUB_TOKEN` starts no other workflow,
+  so its required build never reports. Close and reopen it, or push to it, to start the
+  build.
 - Work on a branch named `feat/…`, `fix/…`, `test/…` or `docs/…`, and open the PR against
   `haziaferi/syncthing-fork-fork`. No default repository is set for `gh` here, and it
   resolves to the `upstream` remote, so always pass `-R haziaferi/syncthing-fork-fork`.
@@ -44,6 +51,8 @@ Upstream's Dependabot config and its scheduled bump workflows (`update-go-versio
 `update-syncthing-submodule`) have not run in this fork; GitHub keeps them off in forks
 by default. Go, Syncthing and dependency bumps arrive through upstream syncs. If they are
 ever turned on here, their PRs land like any other PR: squash, after the checks pass.
+The bump workflows open their PRs with `GITHUB_TOKEN`, so their build has to be started
+by hand (see above).
 
 ## Logs
 
