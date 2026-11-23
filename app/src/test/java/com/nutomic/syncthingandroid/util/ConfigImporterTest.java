@@ -240,9 +240,15 @@ public class ConfigImporterTest {
     @Test
     public void commit_fullExport_replacesEveryLiveItemAndPrefs() throws Exception {
         writeLiveSet(filesDir, "live", VALID_CONFIG);
-        prefs.edit().putString("stale", "old").putString(Constants.PREF_BACKUP_PASSWORD, "pw").commit();
+        prefs.edit()
+                .putString("stale", "old")
+                .putString(Constants.PREF_BACKUP_PASSWORD, "pw")
+                .putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "current/config.zip")
+                .commit();
         Map<String, Object> exported = new HashMap<>();
         exported.put("run_on_wifi", false);
+        exported.put(Constants.PREF_BACKUP_PASSWORD, "from-backup");
+        exported.put(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "from/backup.zip");
         ConfigImporter.Staged staged = stageFull(exported);
 
         ConfigImporter.commit(staged, filesDir, prefs, RENAME);
@@ -254,6 +260,7 @@ public class ConfigImporterTest {
         assertThat(prefs.contains("stale")).isFalse();
         assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
         assertThat(prefs.getString(Constants.PREF_BACKUP_PASSWORD, null)).isEqualTo("pw");
+        assertThat(prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null)).isEqualTo("current/config.zip");
     }
 
     @Test

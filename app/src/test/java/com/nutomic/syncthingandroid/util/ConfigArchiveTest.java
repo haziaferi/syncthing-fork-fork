@@ -248,44 +248,17 @@ public class ConfigArchiveTest {
     }
 
     @Test
-    public void importPrefs_rejectedFile_leavesCurrentPrefsUntouched() throws Exception {
+    public void restorePrefs_replacesEverythingWithTheSnapshot() {
         SharedPreferences prefs = realPrefs();
-        prefs.edit().putString("current", "kept").commit();
-        Map<String, Object> crafted = new HashMap<>();
-        crafted.put("evil", new java.util.ArrayList<>());
-        File file = serialise(crafted);
+        prefs.edit().putString("stale", "old").commit();
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("kept", "yes");
+        snapshot.put("flag", true);
+        snapshot.put(Constants.PREF_WIFI_SSID_WHITELIST, new HashSet<>(Arrays.asList("\"Home\"")));
 
-        try {
-            ConfigArchive.importPrefs(file, prefs);
-            throw new AssertionError("Crafted file was accepted");
-        } catch (java.io.InvalidClassException expected) {
-            // Rejected before any pref was changed.
-        }
-        assertThat(prefs.getString("current", null)).isEqualTo("kept");
-    }
+        assertThat(ConfigArchive.restorePrefs(prefs, snapshot)).isTrue();
 
-    @Test
-    public void importPrefs_validFile_replacesPrefsAndKeepsBackupLocation() throws Exception {
-        File file = tmp.newFile();
-        Map<String, Object> exported = new HashMap<>();
-        exported.put("run_on_wifi", false);
-        exported.put(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "from/backup.zip");
-        exported.put(Constants.PREF_BACKUP_PASSWORD, "from-backup");
-        ConfigArchive.writePrefs(exported, file);
-
-        SharedPreferences prefs = realPrefs();
-        prefs.edit()
-                .putString("stale", "old")
-                .putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "current/config.zip")
-                .putString(Constants.PREF_BACKUP_PASSWORD, "current-pw")
-                .commit();
-
-        assertThat(ConfigArchive.importPrefs(file, prefs)).isTrue();
-
-        assertThat(prefs.contains("stale")).isFalse();
-        assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
-        assertThat(prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null)).isEqualTo("current/config.zip");
-        assertThat(prefs.getString(Constants.PREF_BACKUP_PASSWORD, null)).isEqualTo("current-pw");
+        assertThat(prefs.getAll()).isEqualTo(snapshot);
     }
 
     @Test
