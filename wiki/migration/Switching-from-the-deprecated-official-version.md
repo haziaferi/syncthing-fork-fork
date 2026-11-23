@@ -10,10 +10,9 @@ Switching is easier than you may think!
     - Default folder location: e.g. `/storage/emulated/0/backups/syncthing`
   - Create a new file called `config.zip` comprised of the following files:
     - cert.pem
-    - https-cert.pem
-    - https-key.pem
     - key.pem
     - config.xml
+    - https-cert.pem and https-key.pem, if your export has them. Include both or neither: without them, Syncthing-Fork keeps its own pair.
       - Tip: Use the [Material Files app](https://f-droid.org/packages/me.zhanghai.android.files/) to create the zip file.
   - You can remove the original *.pem and *.xml files after creating the `config.zip` file.
   - Syncthing-Fork will require the `config.zip` to restore your config.
@@ -24,7 +23,7 @@ Switching is easier than you may think!
   - Complete the welcome slides.
   - In the Syncthing-Fork settings, go to "Import & Export".
     - Import the `config.zip` you created earlier.
-      - 🍀 Don't worry. You will get an error message, but the import worked. That's because some Syncthing-Fork specific stuff wasn't found during the import and doesn't hurt.
+      - The import should report success. If it reports an error, nothing was changed: open Settings → Troubleshooting → Open log, where every problem with the archive is listed, fix the `config.zip` and import again.
     - 🔙 Hit "back" to go back to the "Import & Export" screen.
     - 🗝️ Set a password to protect future config exports.
     - Hit "Export config".
