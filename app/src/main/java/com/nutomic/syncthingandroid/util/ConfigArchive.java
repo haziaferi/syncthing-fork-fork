@@ -252,11 +252,26 @@ public final class ConfigArchive {
             return false;
         }
         for (Object o : (Set<?>) value) {
-            if (!(o instanceof String)) {
+            // Null items are kept, as earlier releases did.
+            if (o != null && !(o instanceof String)) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Replaces the prefs with those in a backup's prefs file, keeping the current backup
+     * location and password. The file is read completely before anything changes, so a
+     * rejected or unreadable file leaves the prefs untouched.
+     *
+     * @return the result of the commit
+     */
+    public static boolean importPrefs(File file, SharedPreferences prefs) throws IOException, ClassNotFoundException {
+        Map<String, Object> raw = readPrefs(file);
+        String relPathToZip = prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "");
+        String backupPassword = prefs.getString(Constants.PREF_BACKUP_PASSWORD, "");
+        return applyPrefs(prefs.edit(), importablePrefs(raw), relPathToZip, backupPassword);
     }
 
     /**

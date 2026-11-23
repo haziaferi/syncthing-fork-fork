@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -1307,15 +1306,9 @@ public class SyncthingService extends Service {
 
     private boolean importConfigSharedPrefs(final File file) {
         try {
-            // Read, deserialize shared preferences. Nothing is changed if this fails,
-            // including when the file holds a class outside the allow-list.
-            Map<String, Object> sharedPrefsMap = ConfigArchive.readPrefs(file);
-
-            // Keep the current backup location and password; the imported ones may differ.
-            String relPathToZip = mPreferences.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "");
-            String backupPassword = mPreferences.getString(Constants.PREF_BACKUP_PASSWORD, "");
-            return ConfigArchive.applyPrefs(mPreferences.edit(),
-                    ConfigArchive.importablePrefs(sharedPrefsMap), relPathToZip, backupPassword);
+            // Nothing is changed if this fails, including when the file holds a class
+            // outside the allow-list. The current backup location and password are kept.
+            return ConfigArchive.importPrefs(file, mPreferences);
         } catch (IOException | ClassNotFoundException e) {
             Log.e(TAG, "importConfig: Failed to import SharedPreferences", e);
             return false;

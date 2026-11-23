@@ -248,30 +248,58 @@ public class ConfigArchiveTest {
     }
 
     @Test
-    public void readPrefs_acceptsFileWrittenByWritePrefs() throws Exception {
-        Map<String, ?> exported = sampleExport();
-        File file = tmp.newFile();
-        ConfigArchive.writePrefs(exported, file);
-        assertThat(ConfigArchive.readPrefs(file)).isEqualTo(exported);
-    }
-
-    @Test
-    public void import_rejectedPrefsFile_leavesCurrentPrefsUntouched() throws Exception {
+    public void importPrefs_rejectedFile_leavesCurrentPrefsUntouched() throws Exception {
         SharedPreferences prefs = realPrefs();
         prefs.edit().putString("current", "kept").commit();
         Map<String, Object> crafted = new HashMap<>();
         crafted.put("evil", new java.util.ArrayList<>());
         File file = serialise(crafted);
 
-        // Same order as SyncthingService.importConfigSharedPrefs: read first, then apply.
         try {
-            Map<String, Object> raw = ConfigArchive.readPrefs(file);
-            ConfigArchive.applyPrefs(prefs.edit(), ConfigArchive.importablePrefs(raw), "", "");
+            ConfigArchive.importPrefs(file, prefs);
             throw new AssertionError("Crafted file was accepted");
         } catch (java.io.InvalidClassException expected) {
-            // Rejected before applyPrefs ran.
+            // Rejected before any pref was changed.
         }
         assertThat(prefs.getString("current", null)).isEqualTo("kept");
+    }
+
+    @Test
+    public void importPrefs_validFile_replacesPrefsAndKeepsBackupLocation() throws Exception {
+        File file = tmp.newFile();
+        Map<String, Object> exported = new HashMap<>();
+        exported.put("run_on_wifi", false);
+        exported.put(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "from/backup.zip");
+        exported.put(Constants.PREF_BACKUP_PASSWORD, "from-backup");
+        ConfigArchive.writePrefs(exported, file);
+
+        SharedPreferences prefs = realPrefs();
+        prefs.edit()
+                .putString("stale", "old")
+                .putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "current/config.zip")
+                .putString(Constants.PREF_BACKUP_PASSWORD, "current-pw")
+                .commit();
+
+        assertThat(ConfigArchive.importPrefs(file, prefs)).isTrue();
+
+        assertThat(prefs.contains("stale")).isFalse();
+        assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
+        assertThat(prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null)).isEqualTo("current/config.zip");
+        assertThat(prefs.getString(Constants.PREF_BACKUP_PASSWORD, null)).isEqualTo("current-pw");
+    }
+
+    @Test
+    public void setWithNullItem_isKeptLikeBefore() {
+        // Earlier releases imported such a set as-is (the old asSet helper kept nulls).
+        Set<String> withNull = new HashSet<>(Arrays.asList("\"Home\"", null));
+        Map<String, Object> raw = new HashMap<>();
+        raw.put(Constants.PREF_WIFI_SSID_WHITELIST, withNull);
+        Map<String, Object> importable = ConfigArchive.importablePrefs(raw);
+        assertThat(importable).containsKey(Constants.PREF_WIFI_SSID_WHITELIST);
+
+        SharedPreferences prefs = realPrefs();
+        assertThat(ConfigArchive.applyPrefs(prefs.edit(), importable, "", "")).isTrue();
+        assertThat(prefs.getStringSet(Constants.PREF_WIFI_SSID_WHITELIST, null)).containsExactly("\"Home\"", null);
     }
 
     @Test
