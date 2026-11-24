@@ -71,8 +71,27 @@ public final class BackupFolder {
         }
     }
 
+    /**
+     * The time a new backup is named after: {@code nowMillis}, or the newest existing stamp if
+     * the wall clock reads earlier, so a new backup always orders newest even after the clock
+     * was set back ({@link #nextFile} then adds a counter).
+     */
+    public static long nameTime(File folder, long nowMillis) {
+        List<Entry> entries = entries(folder);
+        return entries.isEmpty() ? nowMillis : Math.max(nowMillis, entries.get(0).time);
+    }
+
     /** The automatic backups in {@code folder}, newest first. */
     public static List<File> list(File folder) {
+        List<Entry> entries = entries(folder);
+        List<File> result = new ArrayList<>(entries.size());
+        for (Entry e : entries) {
+            result.add(e.file);
+        }
+        return result;
+    }
+
+    private static List<Entry> entries(File folder) {
         File[] files = folder.listFiles();
         if (files == null) {
             return Collections.emptyList();
@@ -106,11 +125,7 @@ public final class BackupFolder {
                 return a.counter > b.counter ? -1 : (a.counter == b.counter ? 0 : 1);
             }
         });
-        List<File> result = new ArrayList<>(entries.size());
-        for (Entry e : entries) {
-            result.add(e.file);
-        }
-        return result;
+        return entries;
     }
 
     /**
@@ -120,9 +135,17 @@ public final class BackupFolder {
      * @return false if any deletion failed.
      */
     public static boolean prune(File folder, long nowMillis) {
+        return prune(folder, nowMillis, null);
+    }
+
+    /** As {@link #prune(File, long)}, but never deletes {@code keep}, the backup just written. */
+    public static boolean prune(File folder, long nowMillis, File keep) {
         boolean ok = true;
         List<File> backups = list(folder);
         for (int i = KEEP; i < backups.size(); i++) {
+            if (backups.get(i).equals(keep)) {
+                continue;
+            }
             if (!backups.get(i).delete()) {
                 ok = false;
             }

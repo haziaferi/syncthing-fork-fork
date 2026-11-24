@@ -270,6 +270,29 @@ public class AutoBackupWriterTest {
         assertThat(Files.readAllBytes(manual.toPath())).isEqualTo("manual".getBytes(StandardCharsets.UTF_8));
     }
 
+    // SPEC:R12
+    @Test
+    public void run_wallClockSetBackAnHour_newBackupIsNewestAndKept() throws Exception {
+        for (int i = 0; i < BackupFolder.KEEP; i++) {
+            changeSetting("before-" + i);
+            assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
+        }
+        now[0] -= 60 * MINUTE;
+        changeSetting("after clock change");
+
+        assertThat(writer(REAL).run()).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
+
+        List<File> backups = BackupFolder.list(defaultFolder);
+        assertThat(backups).hasSize(BackupFolder.KEEP);
+        File newest = backups.get(0);
+        // The newest backup holds the changed setting, so the hash recorded for it is right.
+        ConfigImporter.Staged staged = ConfigImporter.stage(newest, "pw", tmp.newFolder("other"));
+        assertThat(staged.prefs.get("some_setting")).isEqualTo("after clock change");
+
+        now[0] += MINUTE;
+        assertThat(writer(REAL).run()).isEqualTo(AutoBackupWriter.Outcome.SKIPPED_UNCHANGED);
+    }
+
     // SPEC:R13
     @Test
     public void run_unchangedContent_writesNothing() throws Exception {

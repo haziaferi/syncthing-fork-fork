@@ -205,15 +205,15 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 ### D-R12 · File names
 
-**Rule:** An automatic backup is named `config-auto-<stamp>.zip`, where `<stamp>` is the UTC time the backup started, as `yyyyMMdd'T'HHmmss'Z'`; if that name exists, `-2`, `-3` and so on are added before `.zip`. Retention and the restore list order backups by the parsed stamp, then by that number, never by the raw file name.
+**Rule:** An automatic backup is named `config-auto-<stamp>.zip`, where `<stamp>` is the UTC time the backup started, as `yyyyMMdd'T'HHmmss'Z'`, or the newest existing backup's stamp if the clock reads earlier; if that name exists, `-2`, `-3` and so on are added before `.zip`. Retention and the restore list order backups by the parsed stamp, then by that number, never by the raw file name.
 
-**Why:** A UTC stamp never repeats or runs backwards, while local time repeats an hour when daylight saving ends: a backup named by local time could then sort as older than the one before it, and retention would delete the newest backup. The raw name sorts `-2` before the unsuffixed name (`-` sorts before `.`), so it is not the order. The `config-auto-` prefix keeps automatic backups apart from manual exports.
+**Why:** Local time repeats an hour when daylight saving ends, and the wall clock itself can be set back by hand or by a time correction: a backup named by either could then sort as older than the one before it, and retention would delete the newest backup. UTC removes the first case, and never naming a backup earlier than the newest removes the second. The raw name sorts `-2` before the unsuffixed name (`-` sorts before `.`), so it is not the order. The `config-auto-` prefix keeps automatic backups apart from manual exports.
 
 **Acceptance:** Unit tests: the name for a fixed clock; a second backup in the same second gets `-2` and orders after the first; with the clock set back an hour, the new backup still orders newest and survives retention.
 
 **Not:** Local time in the name: see Why. The restore list shows the stamp in local time.
 
-**Since:** 2026-11-23 · builder · own words
+**Since:** 2026-11-24 · builder · own words
 
 ## 4. When a backup runs
 

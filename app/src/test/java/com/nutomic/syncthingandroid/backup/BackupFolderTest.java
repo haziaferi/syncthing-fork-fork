@@ -81,6 +81,20 @@ public class BackupFolderTest {
         assertThat(BackupFolder.list(folder)).hasSize(BackupFolder.KEEP);
     }
 
+    // SPEC:R12
+    @Test
+    public void nameTime_clockBehindNewestBackup_usesNewestStamp() throws Exception {
+        assertThat(BackupFolder.nameTime(folder, SUMMER)).isEqualTo(SUMMER);
+        File existing = create(BackupFolder.nextFile(folder, SUMMER));
+
+        long nameTime = BackupFolder.nameTime(folder, SUMMER - HOUR);
+        assertThat(nameTime).isEqualTo(SUMMER);
+        File next = create(BackupFolder.nextFile(folder, nameTime));
+        assertThat(BackupFolder.list(folder)).containsExactly(next, existing).inOrder();
+
+        assertThat(BackupFolder.nameTime(folder, SUMMER + HOUR)).isEqualTo(SUMMER + HOUR);
+    }
+
     // SPEC:R11
     @Test
     public void prune_keepsNewestFive_andOnlyItsOwnFiles() throws Exception {

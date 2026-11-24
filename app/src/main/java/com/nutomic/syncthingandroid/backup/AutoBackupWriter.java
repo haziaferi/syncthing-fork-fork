@@ -130,7 +130,9 @@ public final class AutoBackupWriter {
                 throw new StepFailed(FailureReason.OUT_OF_SPACE, "less than 1 MiB free in " + folder);
             }
             // 7. Write the archive to a .tmp file (R10 step 1).
-            File target = BackupFolder.nextFile(folder, now);
+            // Named no earlier than the newest backup, so it orders newest even if the wall
+            // clock was set back (R12).
+            File target = BackupFolder.nextFile(folder, BackupFolder.nameTime(folder, now));
             tmp = new File(folder, target.getName() + BackupFolder.TMP_SUFFIX);
             List<File> archived = new ArrayList<>(files);
             archived.add(prefsCopy);
@@ -147,11 +149,15 @@ public final class AutoBackupWriter {
                 throw new StepFailed(FailureReason.FOLDER_NOT_WRITABLE, "cannot rename " + tmp + " to " + target);
             }
             tmp = null;
-            // 10. Record it.
-            AutoBackupPrefs.recordSuccess(prefs, now, hash);
             Log.i(TAG, "Wrote automatic backup " + target);
-            // 11. Retention (R10 step 4, R11).
-            if (!BackupFolder.prune(folder, now)) {
+            // 10. Retention (R10 step 4, R11); never deletes the backup just written.
+            boolean pruned = BackupFolder.prune(folder, now, target);
+            // 11. Record it, once it is certain the backup is still there.
+            if (!target.isFile()) {
+                throw new StepFailed(FailureReason.FOLDER_NOT_WRITABLE, target + " vanished after retention");
+            }
+            AutoBackupPrefs.recordSuccess(prefs, now, hash);
+            if (!pruned) {
                 Log.w(TAG, "Could not remove every old backup in " + folder);
                 AutoBackupPrefs.recordFailure(prefs, now, FailureReason.RETENTION_FAILED);
             }
