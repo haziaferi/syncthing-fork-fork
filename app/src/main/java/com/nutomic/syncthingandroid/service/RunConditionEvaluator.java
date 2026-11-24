@@ -83,6 +83,7 @@ public final class RunConditionEvaluator {
         WIFI_DISALLOWED(R.string.reason_wifi_disallowed, true),
         ON_WIFI(R.string.reason_on_wifi, true),
         NOT_ON_WIFI(R.string.reason_not_on_wifi, true),
+        WIFI_WITHOUT_INTERNET(R.string.reason_wifi_without_internet, true),
         ON_METERED_NONMETERED_WIFI(R.string.reason_on_metered_nonmetered_wifi, true),
         ON_NONMETERED_WIFI(R.string.reason_on_nonmetered_wifi, true),
         NOT_NONMETERED_WIFI(R.string.reason_not_nonmetered_wifi, true),
@@ -189,7 +190,7 @@ public final class RunConditionEvaluator {
             }
         }
 
-        check = checkWifi(prefs, device, Constants.PREF_RUN_ON_WIFI);
+        check = checkWifi(prefs, device, Constants.PREF_RUN_ON_WIFI, Constants.PREF_RUN_ON_MOBILE_DATA);
         reasons.add(check.reason);
         if (check.met) {
             check = checkMeteredWifi(prefs, device, Constants.PREF_RUN_ON_METERED_WIFI);
@@ -224,19 +225,33 @@ public final class RunConditionEvaluator {
         if (checkMobileData(prefs, device, Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(objectPrefixAndId)).met) {
             return true;
         }
-        return checkWifi(prefs, device, Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(objectPrefixAndId)).met
+        return checkWifi(prefs, device, Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(objectPrefixAndId),
+                        Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(objectPrefixAndId)).met
                 && checkMeteredWifi(prefs, device, Constants.DYN_PREF_OBJECT_SYNC_ON_METERED_WIFI(objectPrefixAndId)).met
                 && checkWhitelistedWifi(prefs, device,
                         Constants.DYN_PREF_OBJECT_USE_WIFI_SSID_WHITELIST(objectPrefixAndId),
                         Constants.DYN_PREF_OBJECT_SELECTED_WHITELIST_SSID(objectPrefixAndId)).met;
     }
 
-    private static Check checkWifi(SharedPreferences prefs, DeviceConditions device, String prefName) {
+    /**
+     * Whether the phone is on Wi-Fi for these conditions (spec R07). Ethernet counts as Wi-Fi.
+     * A Wi-Fi without internet counts only if mobile data is allowed by the same conditions
+     * ({@code mobilePrefName}) or no mobile network is connected: otherwise Android would send
+     * Syncthing's internet traffic over mobile data.
+     */
+    private static Check checkWifi(SharedPreferences prefs, DeviceConditions device, String prefName,
+                                   String mobilePrefName) {
         if (!prefs.getBoolean(prefName, true)) {
             return new Check(false, Reason.WIFI_DISALLOWED);
         }
-        if (device.transport == Transport.WIFI || device.transport == Transport.ETHERNET) {
+        if (device.ethernetConnected) {
             return new Check(true, Reason.ON_WIFI);
+        }
+        if (device.wifiConnected) {
+            if (device.wifiValidated || prefs.getBoolean(mobilePrefName, false) || !device.mobileConnected) {
+                return new Check(true, Reason.ON_WIFI);
+            }
+            return new Check(false, Reason.WIFI_WITHOUT_INTERNET);
         }
         // Not returning early on purpose: the flight-mode check in decide() still runs.
         return new Check(false, Reason.NOT_ON_WIFI);
@@ -315,9 +330,13 @@ public final class RunConditionEvaluator {
         return new Check(false, Reason.NOT_NONROAMING_MOBILE_DATA);
     }
 
-    /** Ethernet is treated as unmetered, to allow syncing on Android TV and emulators. */
+    /**
+     * The Wi-Fi's own metered state, not the default network's (spec R08): a VPN or mobile
+     * data carrying the traffic says nothing about the Wi-Fi. Ethernet is treated as unmetered,
+     * to allow syncing on Android TV and emulators.
+     */
     private static boolean isMetered(DeviceConditions device) {
-        if (!device.isConnected() || device.transport == Transport.ETHERNET) {
+        if (device.ethernetConnected || !device.wifiConnected) {
             return false;
         }
         return device.wifiMetered;
