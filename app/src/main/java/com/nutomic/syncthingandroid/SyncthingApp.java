@@ -6,6 +6,7 @@ import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
+import com.nutomic.syncthingandroid.backup.AutoBackupScheduler;
 import com.nutomic.syncthingandroid.util.ConfigImporter;
 import com.nutomic.syncthingandroid.util.RecentTasksController;
 
@@ -28,6 +29,9 @@ public class SyncthingApp extends Application {
         if (ConfigImporter.recoverInterruptedImport(getFilesDir(), PreferenceManager.getDefaultSharedPreferences(this))) {
             Log.w(TAG, "Rolled back a config import that was interrupted.");
         }
+
+        // Settings changes trigger the automatic config backup (spec R13).
+        AutoBackupScheduler.register(this);
 
         DaggerDaggerComponent.builder()
                 .syncthingModule(new SyncthingModule(this))

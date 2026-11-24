@@ -23,6 +23,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import com.nutomic.syncthingandroid.backup.AutoBackupScheduler;
+import com.nutomic.syncthingandroid.backup.Clock;
 import com.nutomic.syncthingandroid.R;
 import com.nutomic.syncthingandroid.SyncthingApp;
 import com.nutomic.syncthingandroid.model.Device;
@@ -115,6 +117,8 @@ public class EventProcessor implements  Runnable, RestApi.OnReceiveEventListener
                     LogV("Forwarding ConfigSaved event to RestApi to get the updated config.");
                     mRestApi.reloadConfig();
                 }
+                // A change for the automatic backup (spec R13).
+                AutoBackupScheduler.noteChange(mContext, Clock.SYSTEM);
                 break;
             case "DeviceConnected":
                 mRestApi.updateRemoteDeviceConnected(
