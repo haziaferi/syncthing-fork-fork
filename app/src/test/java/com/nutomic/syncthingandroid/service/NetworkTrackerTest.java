@@ -145,6 +145,20 @@ public class NetworkTrackerTest {
         assertThat(notified).isEqualTo(2);
     }
 
+    // SPEC:R03
+    @Test
+    public void lostBeforeAndroidDropsIt_snapshotSkipsIt() {
+        // Seen on a OnePlus LE2123 (Android 14): onLost arrives while getAllNetworks() still
+        // lists the network being torn down, and no later callback follows.
+        tracker.start();
+        Network wifi = ShadowNetwork.newInstance(5);
+        NetworkCapabilities wifiCaps = caps(NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        connected(wifi, ConnectivityManager.TYPE_WIFI, wifiCaps);
+        callback().onCapabilitiesChanged(wifi, wifiCaps);
+        callback().onLost(wifi);
+        assertThat(tracker.snapshot()).isEmpty();
+    }
+
     // SPEC:R04
     @Test
     public void snapshot_dropsNetworkAfterMissedLost() {

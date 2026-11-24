@@ -24,8 +24,10 @@ import com.nutomic.syncthingandroid.service.DeviceConditions.Transport;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Reports the connected physical networks (spec R03, R05, R08). The only class that asks
@@ -50,6 +52,13 @@ final class NetworkTracker {
      * it only there). Guarded by itself; written on the connectivity thread.
      */
     private final Map<Network, NetworkCapabilities> mNetworks = new HashMap<>();
+    /**
+     * Networks the callback reported lost while Android may still list them as they are torn
+     * down: onLost can arrive before getAllNetworks() drops the network, and no callback follows.
+     * Guarded by {@link #mNetworks}. Network ids are not reused, so an entry is only dropped once
+     * Android no longer lists the network.
+     */
+    private final Set<Network> mLost = new HashSet<>();
     @Nullable private ConnectivityManager.NetworkCallback mCallback;
 
     NetworkTracker(Context context, Listener listener) {
@@ -86,6 +95,7 @@ final class NetworkTracker {
         }
         synchronized (mNetworks) {
             mNetworks.clear();
+            mLost.clear();
         }
         mMainHandler.removeCallbacksAndMessages(null);
     }
@@ -106,24 +116,32 @@ final class NetworkTracker {
             all = new Network[0];
         }
         Map<Network, NetworkCapabilities> fromCallback;
+        Set<Network> lost;
         synchronized (mNetworks) {
-            // Forget networks Android no longer has, so the cache cannot grow or go stale.
+            // Forget networks Android no longer has, so neither cache can grow or go stale.
             Map<Network, NetworkCapabilities> kept = new HashMap<>();
+            Set<Network> stillLost = new HashSet<>();
             for (Network network : all) {
                 NetworkCapabilities caps = mNetworks.get(network);
                 if (caps != null) {
                     kept.put(network, caps);
                 }
+                if (mLost.contains(network)) {
+                    stillLost.add(network);
+                }
             }
             mNetworks.clear();
             mNetworks.putAll(kept);
+            mLost.clear();
+            mLost.addAll(stillLost);
             fromCallback = kept;
+            lost = stillLost;
         }
         Network active = mConnectivityManager.getActiveNetwork();
         List<NetworkState> states = new ArrayList<>(all.length);
         for (Network network : all) {
             NetworkCapabilities caps = mConnectivityManager.getNetworkCapabilities(network);
-            if (caps == null || caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+            if (caps == null || caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) || lost.contains(network)) {
                 continue;
             }
             NetworkCapabilities nameSource = fromCallback.containsKey(network) ? fromCallback.get(network) : caps;
@@ -222,6 +240,7 @@ final class NetworkTracker {
         public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities caps) {
             synchronized (mNetworks) {
                 mNetworks.put(network, caps);
+                mLost.remove(network);
             }
             changed();
         }
@@ -230,6 +249,7 @@ final class NetworkTracker {
         public void onLost(@NonNull Network network) {
             synchronized (mNetworks) {
                 mNetworks.remove(network);
+                mLost.add(network);
             }
             changed();
         }
