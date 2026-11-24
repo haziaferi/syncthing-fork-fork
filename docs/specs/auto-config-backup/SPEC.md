@@ -17,7 +17,7 @@ Kinds: O owner rule · D decided · I inherited · A assumed · Q open.
 | D-R05 | Encryption of the private key | 2. The archive |
 | D-R06 | Settings file format | 2. The archive |
 | D-R07 | Backing up while Syncthing runs | 2. The archive |
-| A-R08 | Atomic config writes | 2. The archive |
+| I-R08 | Atomic config writes | 2. The archive |
 | D-R09 | Backup folder | 3. Storage |
 | D-R10 | Writing and checking a backup | 3. Storage |
 | D-R11 | Retention | 3. Storage |
@@ -142,7 +142,7 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 **Why:** The manual export stops Syncthing for its whole run. A backup after every change must not interrupt syncing.
 
-**Evidence:** `SyncthingService.java:853` shuts Syncthing down in `exportConfig()`. Not checked: that a reader never sees a half-written `config.xml` (R08).
+**Evidence:** `SyncthingService.java:853` shuts Syncthing down in `exportConfig()`.
 
 **Acceptance:** A device test changes a folder setting with Syncthing running. The automatic backup that follows leaves the service state `ACTIVE` throughout, as the service's state log shows.
 
@@ -150,15 +150,15 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 **Since:** 2026-11-23 · builder · own words
 
-### A-R08 · Atomic config writes
+### I-R08 · Atomic config writes
 
 **Rule:** Syncthing and `ConfigXml.saveChanges()` both replace `config.xml` by writing a temporary file and renaming it. So a reader sees either the old or the new file, never a mix.
 
-**Evidence:** `ConfigXml.saveChanges()` writes a temp file, syncs it, and renames it (fixed in `c58699b9`). Not checked: the Syncthing binary's own config writer. R07 relies on this; R10's check catches a torn copy if it is wrong.
+**Evidence:** Syncthing v2.1.7 (submodule `d6d0181f`) saves through `osutil.CreateAtomic` (`lib/config/wrapper.go:508`), which writes a temporary file, syncs it and renames it over `config.xml` (`lib/osutil/atomic.go:78-126`). `ConfigXml.saveChanges()` does the same since `c58699b9`. Checked 2026-11-23.
 
-**Acceptance:** none: confirm by reading the Syncthing version's config save code before R07 is built.
+**Acceptance:** none: inherited behaviour of the Syncthing binary and the app; R10's check catches a torn copy if a later version changes it.
 
-**Since:** 2026-11-23 · builder · own words
+**Since:** 2026-11-24 · builder · own words
 
 ## 3. Storage
 
@@ -219,7 +219,7 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 ### D-R13 · Trigger
 
-**Rule:** A backup runs 10 minutes after the last change, but no later than 60 minutes after the first change it has not yet covered, through a one-off `JobScheduler` job that each change schedules again within that limit. It is skipped when the content hash equals `auto_backup_last_hash`. A failure records its time and reason (R16) and leaves the existing backups untouched.
+**Rule:** A backup runs 10 minutes after the last change, but no later than 60 minutes after the first change it has not yet covered, through a one-off `JobScheduler` job that each change schedules again within that limit. It is skipped when the content hash equals `auto_backup_last_hash` and the backup folder still holds at least one automatic backup. A failure records its time and reason (R16) and leaves the existing backups untouched.
 
 **Why:** A change trigger keeps the newest backup current without writing identical copies every day, and needs no interval setting. The 10-minute wait turns a burst of edits into one backup. The 60-minute limit stops a steady stream of changes from pushing the backup back forever. The app already schedules work with `JobScheduler` (`JobUtils.java`).
 
@@ -238,12 +238,13 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 | storage permission missing | no storage access |
 | out of space while writing | out of space |
 | R10's check fails | backup failed its check |
+| old backups cannot be deleted (R10 step 4) | old backups could not be removed |
 
 **Acceptance:** Unit tests: three changes within 10 minutes schedule one job; a change every 5 minutes still runs the job within 60 minutes of the first; a run with an unchanged hash writes nothing; each failure row records its reason and leaves the existing backups as they were.
 
 **Not:** A daily, weekly or monthly interval, as researchxxl/syncthing-android#240 and #413 asked: it leaves up to a full period of changes unprotected and writes identical copies. Backing up inside `ConfigXml.saveChanges()` itself: it runs on the caller's thread, often the UI.
 
-**Since:** 2026-11-23 · owner · agreed rewording
+**Since:** 2026-11-24 · owner · agreed rewording
 
 ### D-R22 · Runtime preference keys
 

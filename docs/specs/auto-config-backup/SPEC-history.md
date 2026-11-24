@@ -35,3 +35,5 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-23 · R13 · changed · 60-minute limit, runtime keys ignored · owner
 - 2026-11-23 · R22 · added · runtime preference keys · builder
 - 2026-11-23 · R18 · changed · unit tests cover R05 R09 R15 R22 · builder
+- 2026-11-24 · R08 · kind · A → I, checked in Syncthing v2.1.7 · builder
+- 2026-11-24 · R13 · changed · retention failure reason, skip only while a backup exists · owner
