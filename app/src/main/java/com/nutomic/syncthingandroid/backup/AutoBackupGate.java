@@ -12,12 +12,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class AutoBackupGate {
 
     private static final AtomicInteger sManualOperations = new AtomicInteger();
+    /** Counts every manual operation ever begun, so a run can tell one started meanwhile. */
+    private static final AtomicInteger sGeneration = new AtomicInteger();
 
     private AutoBackupGate() {
     }
 
     public static void beginManualOperation() {
+        sGeneration.incrementAndGet();
         sManualOperations.incrementAndGet();
+    }
+
+    public static int generation() {
+        return sGeneration.get();
     }
 
     public static void endManualOperation() {

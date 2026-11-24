@@ -32,7 +32,16 @@ public final class AutoBackupWriter {
         void write(File target, List<File> paths, String password) throws IOException;
     }
 
-    public enum Outcome { WRITTEN, SKIPPED_UNCHANGED, FAILED }
+    /** True once something happened that makes the archive being written unsafe to keep. */
+    public interface Interference {
+        boolean happened();
+    }
+
+    /**
+     * INTERRUPTED: a manual export or import started during the run (R14); nothing was kept
+     * and nothing was recorded.
+     */
+    public enum Outcome { WRITTEN, SKIPPED_UNCHANGED, FAILED, INTERRUPTED }
 
     /** Work folder inside the app's files folder; separate from the manual export's files. */
     public static final String WORK_DIR = "auto-backup-work";
@@ -46,6 +55,7 @@ public final class AutoBackupWriter {
     private final Clock clock;
     private final boolean haveStorageAccess;
     private final ZipWriter zipWriter;
+    private final Interference interference;
 
     /** A step that failed, with the reason to record. */
     private static final class StepFailed extends Exception {
@@ -59,6 +69,12 @@ public final class AutoBackupWriter {
 
     public AutoBackupWriter(File filesDir, File sharedStorageRoot, SharedPreferences prefs, Clock clock,
                             boolean haveStorageAccess, ZipWriter zipWriter) {
+        this(filesDir, sharedStorageRoot, prefs, clock, haveStorageAccess, zipWriter, () -> false);
+    }
+
+    public AutoBackupWriter(File filesDir, File sharedStorageRoot, SharedPreferences prefs, Clock clock,
+                            boolean haveStorageAccess, ZipWriter zipWriter, Interference interference) {
+        this.interference = interference;
         this.filesDir = filesDir;
         this.sharedStorageRoot = sharedStorageRoot;
         this.prefs = prefs;
@@ -144,6 +160,16 @@ public final class AutoBackupWriter {
             }
             // 8. Check it (R10 step 2).
             check(tmp, password, workDir);
+            // A manual export or import that started meanwhile may have changed the files while
+            // they were read, e.g. an old cert with a new key: keep nothing, record nothing (R14).
+            if (interference.happened()) {
+                Log.i(TAG, "A manual export or import started during the backup; discarding it");
+                if (!tmp.delete()) {
+                    Log.w(TAG, "Cannot delete " + tmp);
+                }
+                tmp = null;
+                return Outcome.INTERRUPTED;
+            }
             // 9. Keep it (R10 step 3).
             if (!tmp.renameTo(target)) {
                 throw new StepFailed(FailureReason.FOLDER_NOT_WRITABLE, "cannot rename " + tmp + " to " + target);

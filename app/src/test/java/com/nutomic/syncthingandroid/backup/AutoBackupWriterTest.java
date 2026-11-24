@@ -341,6 +341,24 @@ public class AutoBackupWriterTest {
         assertSameContents(before, defaultFolder);
     }
 
+    // SPEC:R14
+    @Test
+    public void run_manualOperationDuringRun_keepsNothingAndRecordsNothing() throws Exception {
+        assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
+        Map<String, byte[]> before = contents(defaultFolder);
+        String hashBefore = prefs.getString(AutoBackupPrefs.KEY_LAST_HASH, null);
+        changeSetting("during import");
+        now[0] += MINUTE;
+
+        AutoBackupWriter interrupted = new AutoBackupWriter(filesDir, storage, prefs, clock, true, REAL,
+                () -> true);
+        assertThat(interrupted.run()).isEqualTo(AutoBackupWriter.Outcome.INTERRUPTED);
+
+        assertSameContents(before, defaultFolder);
+        assertThat(AutoBackupPrefs.lastFailure(prefs)).isNull();
+        assertThat(prefs.getString(AutoBackupPrefs.KEY_LAST_HASH, null)).isEqualTo(hashBefore);
+    }
+
     // SPEC:R19
     @Test
     public void run_emptyPassword_turnsFeatureOff() {

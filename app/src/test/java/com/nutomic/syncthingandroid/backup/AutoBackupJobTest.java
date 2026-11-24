@@ -100,12 +100,20 @@ public class AutoBackupJobTest {
         assertThat(BackupFolder.list(backupFolder)).hasSize(1);
     }
 
+    private long firstChangeAt() {
+        return context.getSharedPreferences(AutoBackupScheduler.STATE_PREFS, Context.MODE_PRIVATE)
+                .getLong(AutoBackupScheduler.KEY_FIRST_CHANGE, 0L);
+    }
+
     @Test
     public void changeDuringRun_getsItsOwnBackup() {
         long changeAt = T0 + 30 * 1000L;
+        boolean[] scheduledMidRun = {true};
         AutoBackupWriter.ZipWriter changing = (target, paths, password) -> {
             now[0] = changeAt;
             AutoBackupScheduler.noteChange(context, clock);
+            // Scheduling the job's own ID while it runs would stop it on a device (M1).
+            scheduledMidRun[0] = AutoBackupSchedulerTest.pendingBackup(jobs) != null;
             ConfigArchive.writeZip(target, paths, password);
         };
         now[0] = T0 - 5 * 60 * 1000L;
@@ -115,9 +123,73 @@ public class AutoBackupJobTest {
 
         assertThat(AutoBackupJob.execute(context, clock, changing, true)).isEqualTo(AutoBackupJob.Result.WRITTEN);
 
-        assertThat(context.getSharedPreferences(AutoBackupScheduler.STATE_PREFS, Context.MODE_PRIVATE)
-                .getLong(AutoBackupScheduler.KEY_FIRST_CHANGE, 0L)).isEqualTo(changeAt);
-        assertThat(AutoBackupSchedulerTest.pendingBackup(jobs)).isNotNull();
+        assertThat(scheduledMidRun[0]).isFalse();
+        assertThat(firstChangeAt()).isEqualTo(changeAt);
+        JobInfo job = AutoBackupSchedulerTest.pendingBackup(jobs);
+        assertThat(job).isNotNull();
+        assertThat(job.getMinLatencyMillis()).isEqualTo(AutoBackupScheduler.DEBOUNCE_MS - (now[0] - changeAt));
+    }
+
+    @Test
+    public void runWhileAnotherRuns_isDeferred() {
+        AutoBackupJob.Result[] nested = {null};
+        AutoBackupWriter.ZipWriter overlapping = (target, paths, password) -> {
+            nested[0] = AutoBackupJob.execute(context, clock, ConfigArchive::writeZip, true);
+            ConfigArchive.writeZip(target, paths, password);
+        };
+
+        assertThat(AutoBackupJob.execute(context, clock, overlapping, true)).isEqualTo(AutoBackupJob.Result.WRITTEN);
+
+        assertThat(nested[0]).isEqualTo(AutoBackupJob.Result.DEFERRED);
+        assertThat(BackupFolder.list(backupFolder)).hasSize(1);
+    }
+
+    // SPEC:R14
+    @Test
+    public void importStartingMidRun_keepsNothingAndReschedules() {
+        long pendingSince = T0 - 5 * 60 * 1000L;
+        now[0] = pendingSince;
+        AutoBackupScheduler.noteChange(context, clock);
+        now[0] = T0;
+        jobs.cancelAll();
+        AutoBackupWriter.ZipWriter importStarts = (target, paths, password) -> {
+            AutoBackupGate.beginManualOperation();
+            ConfigArchive.writeZip(target, paths, password);
+        };
+        try {
+            assertThat(AutoBackupJob.execute(context, clock, importStarts, true))
+                    .isEqualTo(AutoBackupJob.Result.DEFERRED);
+        } finally {
+            AutoBackupGate.endManualOperation();
+        }
+
+        assertThat(backupFolder.list()).isEmpty();
+        assertThat(AutoBackupPrefs.lastFailure(prefs)).isNull();
+        assertThat(firstChangeAt()).isEqualTo(pendingSince);
+        JobInfo job = AutoBackupSchedulerTest.pendingBackup(jobs);
+        assertThat(job).isNotNull();
+        assertThat(job.getMinLatencyMillis()).isEqualTo(AutoBackupScheduler.DEBOUNCE_MS);
+    }
+
+    @Test
+    public void failedRun_keepsThePendingChange() {
+        long pendingSince = T0 - 5 * 60 * 1000L;
+        now[0] = pendingSince;
+        AutoBackupScheduler.noteChange(context, clock);
+        now[0] = T0;
+        jobs.cancelAll();
+
+        assertThat(AutoBackupJob.execute(context, clock, ConfigArchive::writeZip, false))
+                .isEqualTo(AutoBackupJob.Result.FAILED);
+
+        assertThat(firstChangeAt()).isEqualTo(pendingSince);
+        // No retry loop: the next change, or the next start of the feature, schedules it.
+        assertThat(AutoBackupSchedulerTest.pendingBackup(jobs)).isNull();
+
+        prefs.edit().putString(Constants.PREF_BACKUP_PASSWORD, "").commit();
+        assertThat(AutoBackupJob.execute(context, clock, ConfigArchive::writeZip, true))
+                .isEqualTo(AutoBackupJob.Result.FAILED);
+        assertThat(firstChangeAt()).isEqualTo(0L);
     }
 
     @Test

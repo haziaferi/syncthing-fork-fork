@@ -44,20 +44,70 @@ public final class AutoBackupScheduler {
         return context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE);
     }
 
-    /** Records a change and schedules the backup job. Does nothing while the feature is off. */
+    /**
+     * Records a change and schedules the backup job. Does nothing while the feature is off.
+     * While a run is in progress the change is only recorded: scheduling the job's own ID
+     * would stop the running job, so the run schedules it when it ends.
+     */
     public static void noteChange(Context context, Clock clock) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         if (!AutoBackupPrefs.isEnabled(prefs)) {
             return;
         }
         long now = clock.nowMillis();
-        SharedPreferences state = state(context);
-        long firstChangeAt = state.getLong(KEY_FIRST_CHANGE, 0L);
-        if (firstChangeAt == 0L) {
-            firstChangeAt = now;
-            state.edit().putLong(KEY_FIRST_CHANGE, firstChangeAt).commit();
+        long firstChangeAt = recordChange(context, now);
+        if (AutoBackupJob.isRunning()) {
+            return;
         }
         scheduleIn(context, delayMillis(now, firstChangeAt));
+    }
+
+    /** Sets the pending change time to {@code at} unless an earlier one is pending; returns it. */
+    private static synchronized long recordChange(Context context, long at) {
+        SharedPreferences state = state(context);
+        long firstChangeAt = state.getLong(KEY_FIRST_CHANGE, 0L);
+        if (firstChangeAt == 0L || at < firstChangeAt) {
+            firstChangeAt = at;
+            state.edit().putLong(KEY_FIRST_CHANGE, firstChangeAt).commit();
+        }
+        return firstChangeAt;
+    }
+
+    /** The time of the first change no backup covers yet, or 0. */
+    public static synchronized long pendingChangeAt(Context context) {
+        return state(context).getLong(KEY_FIRST_CHANGE, 0L);
+    }
+
+    /** Returns the pending change time (0 if none) and clears it, as a run starts. */
+    public static synchronized long takePendingChange(Context context) {
+        long firstChangeAt = pendingChangeAt(context);
+        clearPendingChange(context);
+        return firstChangeAt;
+    }
+
+    /**
+     * Puts back a change a run did not cover. {@code since} 0 means the time is unknown;
+     * the call then records nothing new if a change is already pending.
+     */
+    public static void restorePendingChange(Context context, long since) {
+        if (since == 0L) {
+            if (pendingChangeAt(context) != 0L) {
+                return;
+            }
+            since = System.currentTimeMillis();
+        }
+        recordChange(context, since);
+    }
+
+    /** Schedules the job for the pending change, if there is one and the feature is on. */
+    public static void scheduleIfPending(Context context, Clock clock) {
+        if (!AutoBackupPrefs.isEnabled(PreferenceManager.getDefaultSharedPreferences(context))) {
+            return;
+        }
+        long firstChangeAt = pendingChangeAt(context);
+        if (firstChangeAt != 0L) {
+            scheduleIn(context, delayMillis(clock.nowMillis(), firstChangeAt));
+        }
     }
 
     /** Schedules the backup job to run after {@code delayMs}, replacing any pending one. */
@@ -78,7 +128,7 @@ public final class AutoBackupScheduler {
         clearPendingChange(context);
     }
 
-    public static void clearPendingChange(Context context) {
+    public static synchronized void clearPendingChange(Context context) {
         state(context).edit().remove(KEY_FIRST_CHANGE).commit();
     }
 
