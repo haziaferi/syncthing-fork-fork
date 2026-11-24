@@ -403,7 +403,7 @@ public final class ConfigImporter {
      * Deletes a file or folder tree. A symbolic link is deleted itself and never followed, so a
      * link planted by an archive can't make this delete anything outside the tree.
      */
-    static void deleteQuietly(File file) {
+    public static void deleteQuietly(File file) {
         if (isSymbolicLink(file)) {
             if (!file.delete()) {
                 Log.w(TAG, "Failed to delete link " + file);

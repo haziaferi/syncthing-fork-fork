@@ -36,7 +36,7 @@ import java.util.zip.ZipOutputStream;
 @Config(application = android.app.Application.class, sdk = 37)
 public class ConfigImporterTest {
 
-    static final String VALID_CONFIG =
+    public static final String VALID_CONFIG =
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             + "<configuration version=\"37\"><gui><address>127.0.0.1:8384</address>"
             + "<apikey>k</apikey></gui><options></options></configuration>";
