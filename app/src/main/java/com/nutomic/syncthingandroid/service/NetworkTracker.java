@@ -59,6 +59,7 @@ final class NetworkTracker {
         if (mCallback != null) {
             return;
         }
+        seed();
         mCallback = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                 ? new Callback(ConnectivityManager.NetworkCallback.FLAG_INCLUDE_LOCATION_INFO)
                 : new Callback();
@@ -68,6 +69,30 @@ final class NetworkTracker {
             // Android limits the callbacks per app; without one the 15-minute re-check still runs.
             Log.e(TAG, "registerNetworkCallback failed", e);
             mCallback = null;
+        }
+    }
+
+    /**
+     * Reads the networks already connected, so the first decision does not see "no network"
+     * (and flight mode) before the callback reports them. On API 31+ these capabilities carry
+     * no Wi-Fi name; the callback brings it moments later.
+     */
+    @SuppressWarnings("deprecation")
+    private void seed() {
+        Network[] all;
+        try {
+            all = mConnectivityManager.getAllNetworks();
+        } catch (RuntimeException e) {
+            Log.w(TAG, "getAllNetworks failed", e);
+            return;
+        }
+        synchronized (mNetworks) {
+            for (Network network : all) {
+                NetworkCapabilities caps = mConnectivityManager.getNetworkCapabilities(network);
+                if (caps != null && !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                    mNetworks.put(network, caps);
+                }
+            }
         }
     }
 
@@ -153,7 +178,7 @@ final class NetworkTracker {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return wifiInfoFromCaps(caps);
         }
-        WifiManager wifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+        WifiManager wifiManager = (WifiManager) mContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         return wifiManager != null ? wifiManager.getConnectionInfo() : null;
     }
 

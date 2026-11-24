@@ -7,6 +7,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.os.Looper;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -21,6 +22,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowNetwork;
 import org.robolectric.shadows.ShadowNetworkCapabilities;
+import org.robolectric.shadows.ShadowNetworkInfo;
 
 import java.util.List;
 import java.util.Set;
@@ -37,7 +39,28 @@ public class NetworkTrackerTest {
     public void setUp() {
         Context context = ApplicationProvider.getApplicationContext();
         cm = context.getSystemService(ConnectivityManager.class);
+        shadowOf(cm).clearAllNetworks();
         tracker = new NetworkTracker(context, () -> notified++);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void connected(Network network, int legacyType, NetworkCapabilities caps) {
+        shadowOf(cm).addNetwork(network, ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED,
+                legacyType, 0, true, NetworkInfo.State.CONNECTED));
+        shadowOf(cm).setNetworkCapabilities(network, caps);
+    }
+
+    @Test
+    public void start_seedsConnectedNetworks_skipsVpn() {
+        connected(ShadowNetwork.newInstance(7), ConnectivityManager.TYPE_WIFI,
+                caps(NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.NET_CAPABILITY_VALIDATED));
+        connected(ShadowNetwork.newInstance(8), ConnectivityManager.TYPE_VPN,
+                caps(NetworkCapabilities.TRANSPORT_VPN));
+        tracker.start();
+        List<NetworkState> snapshot = tracker.snapshot();
+        assertThat(snapshot).hasSize(1);
+        assertThat(snapshot.get(0).kind).isEqualTo(Transport.WIFI);
+        assertThat(notified).isEqualTo(0);
     }
 
     @After

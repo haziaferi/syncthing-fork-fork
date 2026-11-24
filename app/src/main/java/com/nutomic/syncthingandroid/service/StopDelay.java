@@ -45,12 +45,16 @@ final class StopDelay {
         return true;
     }
 
-    /** The earliest time a hold ends, or -1 when nothing is held. */
-    synchronized long nextCheckAt() {
+    /**
+     * The earliest time after {@code nowMs} that a hold ends, or -1 when none does. A hold that
+     * has already ended is left out: its key may never be checked again (a folder while
+     * Syncthing is stopped), and its next {@link #effective} call returns false anyway.
+     */
+    synchronized long nextCheckAt(long nowMs) {
         long next = -1L;
         for (long since : unmetSince.values()) {
             long end = since + DELAY_MS;
-            if (next == -1L || end < next) {
+            if (end > nowMs && (next == -1L || end < next)) {
                 next = end;
             }
         }

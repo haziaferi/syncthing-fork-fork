@@ -8,10 +8,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SyncStatusObserver;
 import android.content.res.Resources;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
@@ -38,6 +34,21 @@ public class RunConditionMonitor {
     private static final String TAG = "RunConditionMonitor";
 
     private Boolean ENABLE_VERBOSE_LOG = false;
+
+    /** Re-evaluate at least this long after the last evaluation, in case a callback was missed (spec R04). */
+    static final long RECHECK_MS = 15 * 60 * 1000L;
+
+    /** Key of the whole-app decision in {@link #mStopDelay}. */
+    private static final String APP_KEY = "";
+
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private final StopDelay mStopDelay = new StopDelay();
+    private final Runnable mReevaluate = this::updateShouldRunDecision;
+    private final Runnable mHoldEnd = this::updateShouldRunDecision;
+    private NetworkTracker mNetworkTracker;
+    private boolean mShutdown = false;
+    /** Whether the last decision was the user's force-stop, which never waits (spec R09). */
+    private boolean mLastDecisionForceStop = false;
 
     public static final String ACTION_SYNC_TRIGGER_FIRED =
         ".service.RunConditionMonitor.ACTION_SYNC_TRIGGER_FIRED";
@@ -112,7 +123,21 @@ public class RunConditionMonitor {
     public RunConditionMonitor(Context context,
             OnShouldRunChangedListener onShouldRunChangedListener,
             OnSyncPreconditionChangedListener onSyncPreconditionChangedListener) {
-        ((SyncthingApp) context.getApplicationContext()).component().inject(this);
+        this(context, null, onShouldRunChangedListener, onSyncPreconditionChangedListener);
+    }
+
+    /**
+     * @param preferences the app's preferences, or null to have them injected. Tests pass them,
+     *                    so they need no {@link SyncthingApp}.
+     */
+    RunConditionMonitor(Context context, @Nullable SharedPreferences preferences,
+            OnShouldRunChangedListener onShouldRunChangedListener,
+            OnSyncPreconditionChangedListener onSyncPreconditionChangedListener) {
+        if (preferences != null) {
+            mPreferences = preferences;
+        } else {
+            ((SyncthingApp) context.getApplicationContext()).component().inject(this);
+        }
         ENABLE_VERBOSE_LOG = AppPrefs.getPrefVerboseLog(mPreferences);
         LogV("Created new instance");
         mContext = context;
@@ -120,11 +145,16 @@ public class RunConditionMonitor {
         mOnShouldRunChangedListener = onShouldRunChangedListener;
         mOnSyncPreconditionChangedListener = onSyncPreconditionChangedListener;
 
+        // Network changes arrive through callbacks (spec R03). Started before the first
+        // decision, so that decision already sees the connected networks.
+        mNetworkTracker = new NetworkTracker(mContext, this::updateShouldRunDecision);
+        mNetworkTracker.start();
+
         /**
          * Register broadcast receivers.
          */
-        // NetworkReceiver
-        ReceiverManager.registerReceiver(mContext, new NetworkReceiver(), new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        // Screen on: re-check in case a network callback was missed (spec R04).
+        ReceiverManager.registerReceiver(mContext, new ScreenOnReceiver(), new IntentFilter(Intent.ACTION_SCREEN_ON));
 
         // BatteryReceiver
         IntentFilter filter = new IntentFilter();
@@ -138,8 +168,13 @@ public class RunConditionMonitor {
                 new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED));
 
         // SyncStatusObserver to monitor android's "AutoSync" quick toggle.
-        mSyncStatusObserverHandle = ContentResolver.addStatusChangeListener(
-                ContentResolver.SYNC_OBSERVER_TYPE_SETTINGS, mSyncStatusObserver);
+        try {
+            mSyncStatusObserverHandle = ContentResolver.addStatusChangeListener(
+                    ContentResolver.SYNC_OBSERVER_TYPE_SETTINGS, mSyncStatusObserver);
+        } catch (RuntimeException e) {
+            // Without it, the 15-minute re-check still picks up the toggle (spec R04).
+            Log.w(TAG, "addStatusChangeListener failed", e);
+        }
 
         // SyncTriggerReceiver
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
@@ -196,6 +231,11 @@ public class RunConditionMonitor {
 
     public void shutdown() {
         LogV("Shutting down");
+        mShutdown = true;
+        mHandler.removeCallbacksAndMessages(null);
+        if (mNetworkTracker != null) {
+            mNetworkTracker.stop();
+        }
         JobUtils.cancelSyncTriggerJob(mContext);
         if (mSyncStatusObserverHandle != null) {
             ContentResolver.removeStatusChangeListener(mSyncStatusObserverHandle);
@@ -229,10 +269,10 @@ public class RunConditionMonitor {
         }
     }
 
-    private class NetworkReceiver extends BroadcastReceiver {
+    private class ScreenOnReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
+            if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
                 updateShouldRunDecision();
             }
         }
@@ -349,12 +389,24 @@ public class RunConditionMonitor {
      * We then need to decide if syncthing should run.
      */
     public void updateShouldRunDecision() {
+        if (mShutdown) {
+            return;
+        }
         if (!Constants.isRunningOnEmulator()) {
             triggeredSyncDurationS = RunConditionEvaluator.syncDurationMinutes(mPreferences) * 60;
             triggeredSyncSleepIntervalS = RunConditionEvaluator.sleepIntervalMinutes(mPreferences) * 60;
         }
 
-        boolean newShouldRun = decideShouldRun();
+        boolean rawShouldRun = decideShouldRun();
+        boolean newShouldRun;
+        if (mLastDecisionForceStop) {
+            // The user's force-stop never waits, and nothing it stopped is held (spec R09).
+            mStopDelay.clear();
+            newShouldRun = false;
+        } else {
+            newShouldRun = mStopDelay.effective(APP_KEY, rawShouldRun, SystemClock.elapsedRealtime());
+        }
+        scheduleReevaluations();
         if (newShouldRun) {
             /**
              * Trigger:
@@ -405,6 +457,21 @@ public class RunConditionMonitor {
         }
     }
 
+    /**
+     * Re-evaluates {@link #RECHECK_MS} after this evaluation (spec R04), and when the stop
+     * delay's earliest hold ends (spec R09).
+     */
+    private void scheduleReevaluations() {
+        mHandler.removeCallbacks(mReevaluate);
+        mHandler.postDelayed(mReevaluate, RECHECK_MS);
+        mHandler.removeCallbacks(mHoldEnd);
+        long now = SystemClock.elapsedRealtime();
+        long holdEnd = mStopDelay.nextCheckAt(now);
+        if (holdEnd != -1L) {
+            mHandler.postDelayed(mHoldEnd, holdEnd - now);
+        }
+    }
+
     public String getRunDecisionExplanation() {
         return mRunDecisionExplanation;
     }
@@ -418,6 +485,7 @@ public class RunConditionMonitor {
         RunConditionEvaluator.Decision decision = RunConditionEvaluator.decide(
                 mPreferences, device, SystemClock.elapsedRealtime(), mTimeConditionMatch);
         mTimeConditionMatch = decision.timeConditionMatch;
+        mLastDecisionForceStop = decision.reasons.contains(RunConditionEvaluator.Reason.FORCE_STOP);
         mRunDecisionExplanation = formatExplanation(res, decision);
         LogV("decideShouldRun: " + device + ", reasons=" + decision.reasons + " => " + decision.shouldRun);
         return decision.shouldRun;
@@ -428,9 +496,14 @@ public class RunConditionMonitor {
      * Precondition: Object must own pref "...CustomSyncConditionsEnabled == true".
      */
     public Boolean checkObjectSyncConditions(String objectPrefixAndId) {
-        boolean met = RunConditionEvaluator.checkObjectConditions(
+        boolean raw = RunConditionEvaluator.checkObjectConditions(
                 mPreferences, readDeviceConditions(), objectPrefixAndId);
-        LogV("checkObjectSyncConditions(" + objectPrefixAndId + "): " + met);
+        // A folder or device pauses only after its conditions stay unmet for 10 seconds (spec R09).
+        boolean met = mStopDelay.effective(objectPrefixAndId, raw, SystemClock.elapsedRealtime());
+        if (met != raw) {
+            mHandler.post(this::scheduleReevaluations);
+        }
+        LogV("checkObjectSyncConditions(" + objectPrefixAndId + "): " + raw + (met != raw ? ", held" : ""));
         return met;
     }
 
@@ -457,52 +530,16 @@ public class RunConditionMonitor {
     }
 
     /**
-     * Reads the current device state. The only place that queries the Android framework
-     * for run-condition inputs.
+     * Reads the current device state. Network fields come from {@link NetworkTracker}
+     * through {@link NetworkSnapshot} (spec R05, R07, R08).
      */
     private DeviceConditions readDeviceConditions() {
         DeviceConditions.Builder builder = new DeviceConditions.Builder()
                 .charging(isCharging())
                 .powerSaving(isPowerSaving())
                 .masterSyncEnabled(ContentResolver.getMasterSyncAutomatically());
-
-        ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        if (ni == null) {
-            // In flight mode.
-            builder.transport(DeviceConditions.Transport.NO_ACTIVE_NETWORK);
-        } else if (!ni.isConnected()) {
-            builder.transport(DeviceConditions.Transport.NO_ACTIVE_NETWORK);
-        } else {
-            switch (ni.getType()) {
-                case ConnectivityManager.TYPE_WIFI:
-                case ConnectivityManager.TYPE_WIMAX:
-                    builder.transport(DeviceConditions.Transport.WIFI);
-                    break;
-                case ConnectivityManager.TYPE_ETHERNET:
-                    builder.transport(DeviceConditions.Transport.ETHERNET);
-                    break;
-                case ConnectivityManager.TYPE_BLUETOOTH:
-                case ConnectivityManager.TYPE_MOBILE:
-                case ConnectivityManager.TYPE_MOBILE_DUN:
-                case ConnectivityManager.TYPE_MOBILE_HIPRI:
-                    builder.transport(DeviceConditions.Transport.MOBILE);
-                    break;
-                default:
-                    builder.transport(DeviceConditions.Transport.OTHER);
-                    break;
-            }
-            builder.wifiMetered(cm.isActiveNetworkMetered());
-            builder.roaming(ni.isRoaming());
-        }
-
-        WifiManager wifiManager = (WifiManager) mContext.getApplicationContext()
-                .getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInfo = (wifiManager != null) ? wifiManager.getConnectionInfo() : null;
-        if (wifiInfo != null) {
-            // DO NOT RELEASE WITH A LOG LINE PRINTING THE SSID.
-            builder.wifiInfoAvailable(true).wifiSsid(wifiInfo.getSSID());
-        }
+        // DO NOT RELEASE WITH A LOG LINE PRINTING THE SSID.
+        NetworkSnapshot.fill(builder, mNetworkTracker.snapshot());
         return builder.build();
     }
 
