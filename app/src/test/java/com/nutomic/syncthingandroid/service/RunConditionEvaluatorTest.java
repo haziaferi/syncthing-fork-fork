@@ -48,7 +48,8 @@ public class RunConditionEvaluatorTest {
     }
 
     private static DeviceConditions wifi() {
-        return device().transport(Transport.WIFI).wifiInfoAvailable(true).wifiSsid("\"Home\"").build();
+        return device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true)
+                .wifiInfoAvailable(true).wifiSsid("\"Home\"").build();
     }
 
     private Decision decide(DeviceConditions d) {
@@ -217,14 +218,14 @@ public class RunConditionEvaluatorTest {
 
     @Test
     public void wifiAllowed_meteredDisallowed_doesNotRun() {
-        Decision d = decide(device().transport(Transport.WIFI).activeNetworkMetered(true).build());
+        Decision d = decide(device().transport(Transport.WIFI).wifiMetered(true).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).contains(Reason.NOT_NONMETERED_WIFI);
     }
 
     @Test
     public void ethernet_reportedMetered_stillRuns() {
-        Decision d = decide(device().transport(Transport.ETHERNET).activeNetworkMetered(true).build());
+        Decision d = decide(device().transport(Transport.ETHERNET).wifiMetered(true).build());
         assertThat(d.shouldRun).isTrue();
         assertThat(d.reasons).contains(Reason.ON_NONMETERED_WIFI);
     }
@@ -286,7 +287,7 @@ public class RunConditionEvaluatorTest {
     @Test
     public void noConditionMatched_doesNotRun() {
         prefs.edit().putBoolean(Constants.PREF_RUN_ON_WIFI, false).commit();
-        Decision d = decide(device().transport(Transport.DISCONNECTED).build());
+        Decision d = decide(device().transport(Transport.NO_ACTIVE_NETWORK).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.WIFI_DISALLOWED).inOrder();
     }

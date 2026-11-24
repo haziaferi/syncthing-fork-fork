@@ -320,6 +320,6 @@ public final class RunConditionEvaluator {
         if (!device.isConnected() || device.transport == Transport.ETHERNET) {
             return false;
         }
-        return device.activeNetworkMetered;
+        return device.wifiMetered;
     }
 }

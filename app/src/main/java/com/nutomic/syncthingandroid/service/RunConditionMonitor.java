@@ -472,7 +472,7 @@ public class RunConditionMonitor {
             // In flight mode.
             builder.transport(DeviceConditions.Transport.NO_ACTIVE_NETWORK);
         } else if (!ni.isConnected()) {
-            builder.transport(DeviceConditions.Transport.DISCONNECTED);
+            builder.transport(DeviceConditions.Transport.NO_ACTIVE_NETWORK);
         } else {
             switch (ni.getType()) {
                 case ConnectivityManager.TYPE_WIFI:
@@ -492,7 +492,7 @@ public class RunConditionMonitor {
                     builder.transport(DeviceConditions.Transport.OTHER);
                     break;
             }
-            builder.activeNetworkMetered(cm.isActiveNetworkMetered());
+            builder.wifiMetered(cm.isActiveNetworkMetered());
             builder.roaming(ni.isRoaming());
         }
 
