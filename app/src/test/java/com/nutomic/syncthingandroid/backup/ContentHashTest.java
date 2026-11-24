@@ -1,6 +1,9 @@
 package com.nutomic.syncthingandroid.backup;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import com.nutomic.syncthingandroid.service.Constants;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,22 +62,33 @@ public class ContentHashTest {
         assertThat(ContentHash.of(files, reverse)).isEqualTo(hash);
     }
 
+    /** Every key of R22's table, with a device ID or folder ID where the key takes one. */
+    static final String[] RUNTIME_KEYS = {
+            Constants.PREF_EVENT_PROCESSOR_LAST_SYNC_ID,
+            Constants.PREF_LAST_RUN_TIME,
+            Constants.PREF_APP_START_COUNTER,
+            Constants.PREF_CACHE_DEVICE_LASTSEEN_PREFIX + "X",
+            Constants.PREF_DEBUG_FACILITIES_AVAILABLE,
+            Constants.PREF_LAST_BINARY_VERSION,
+            Constants.PREF_BTNSTATE_FORCE_START_STOP,
+            "previously_selected_syncthing_folder",
+            "saved_sub_directory_abcd-1234",
+            AutoBackupPrefs.KEY_LAST_SUCCESS,
+            AutoBackupPrefs.KEY_LAST_FAILURE,
+            AutoBackupPrefs.KEY_LAST_HASH,
+    };
+
     // SPEC:R22
     @Test
     public void of_runtimeKeyChange_sameHash() throws Exception {
-        Map<String, Object> base = prefs();
-        String hash = ContentHash.of(files, base);
-
-        Map<String, Object> changed = prefs();
-        changed.put("last_sync_id", 42L);
-        changed.put("device_lastseen_X", 1000L);
-        changed.put(AutoBackupPrefs.KEY_LAST_HASH, "abc");
-        assertThat(ContentHash.of(files, changed)).isEqualTo(hash);
-
-        changed.put("last_sync_id", 43L);
-        changed.put("device_lastseen_X", 2000L);
-        changed.put(AutoBackupPrefs.KEY_LAST_HASH, "def");
-        assertThat(ContentHash.of(files, changed)).isEqualTo(hash);
+        String hash = ContentHash.of(files, prefs());
+        for (String key : RUNTIME_KEYS) {
+            Map<String, Object> added = prefs();
+            added.put(key, "first");
+            assertWithMessage(key).that(ContentHash.of(files, added)).isEqualTo(hash);
+            added.put(key, "second");
+            assertWithMessage(key).that(ContentHash.of(files, added)).isEqualTo(hash);
+        }
     }
 
     @Test

@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.Nullable;
 
+import com.nutomic.syncthingandroid.activities.ShareActivity;
 import com.nutomic.syncthingandroid.service.Constants;
 
 import java.io.File;
@@ -39,7 +40,8 @@ public final class AutoBackupPrefs {
                     Constants.PREF_APP_START_COUNTER,
                     Constants.PREF_DEBUG_FACILITIES_AVAILABLE,
                     Constants.PREF_LAST_BINARY_VERSION,
-                    Constants.PREF_BTNSTATE_FORCE_START_STOP)));
+                    Constants.PREF_BTNSTATE_FORCE_START_STOP,
+                    ShareActivity.PREF_PREVIOUSLY_SELECTED_SYNCTHING_FOLDER)));
 
     public enum FailureReason {
         FOLDER_NOT_WRITABLE,
@@ -69,7 +71,8 @@ public final class AutoBackupPrefs {
         }
         return RUNTIME_KEYS.contains(key)
                 || STATUS_KEYS.contains(key)
-                || key.startsWith(Constants.PREF_CACHE_DEVICE_LASTSEEN_PREFIX);
+                || key.startsWith(Constants.PREF_CACHE_DEVICE_LASTSEEN_PREFIX)
+                || key.startsWith(ShareActivity.PREF_FOLDER_SAVED_SUBDIRECTORY);
     }
 
     public static boolean isEnabled(SharedPreferences prefs) {

@@ -62,13 +62,17 @@ public final class AutoBackupScheduler {
         scheduleIn(context, delayMillis(now, firstChangeAt));
     }
 
-    /** Sets the pending change time to {@code at} unless an earlier one is pending; returns it. */
+    /**
+     * Sets the pending change time to {@code at} unless an earlier one is pending; returns it.
+     * apply() updates memory at once and writes to disk in the background, since this often
+     * runs on the main thread (a config save or a settings change).
+     */
     private static synchronized long recordChange(Context context, long at) {
         SharedPreferences state = state(context);
         long firstChangeAt = state.getLong(KEY_FIRST_CHANGE, 0L);
         if (firstChangeAt == 0L || at < firstChangeAt) {
             firstChangeAt = at;
-            state.edit().putLong(KEY_FIRST_CHANGE, firstChangeAt).commit();
+            state.edit().putLong(KEY_FIRST_CHANGE, firstChangeAt).apply();
         }
         return firstChangeAt;
     }
@@ -89,12 +93,12 @@ public final class AutoBackupScheduler {
      * Puts back a change a run did not cover. {@code since} 0 means the time is unknown;
      * the call then records nothing new if a change is already pending.
      */
-    public static void restorePendingChange(Context context, long since) {
+    public static void restorePendingChange(Context context, long since, Clock clock) {
         if (since == 0L) {
             if (pendingChangeAt(context) != 0L) {
                 return;
             }
-            since = System.currentTimeMillis();
+            since = clock.nowMillis();
         }
         recordChange(context, since);
     }
@@ -129,7 +133,7 @@ public final class AutoBackupScheduler {
     }
 
     public static synchronized void clearPendingChange(Context context) {
-        state(context).edit().remove(KEY_FIRST_CHANGE).commit();
+        state(context).edit().remove(KEY_FIRST_CHANGE).apply();
     }
 
     /** Applies the trigger rules to a change of {@code key}; a null key means the prefs were cleared. */

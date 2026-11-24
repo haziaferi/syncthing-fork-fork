@@ -263,13 +263,15 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 | `debug_facilities_available` | `PREF_DEBUG_FACILITIES_AVAILABLE` | `RestApi.java:446` |
 | `lastBinaryVersion` | `PREF_LAST_BINARY_VERSION` | `RestApi.java:452` |
 | `btnStateForceStartStop` | `PREF_BTNSTATE_FORCE_START_STOP` | `QuickSettingsTileForce.java:76`, `AppConfigReceiver.java:95` |
+| `previously_selected_syncthing_folder` | `ShareActivity.PREF_PREVIOUSLY_SELECTED_SYNCTHING_FOLDER` | `ShareActivity.java:249`, the share screen's last folder |
+| `saved_sub_directory_` + folder ID | `ShareActivity.PREF_FOLDER_SAVED_SUBDIRECTORY` | `ShareActivity.java:266`, the share screen's last subfolder |
 | the status keys of R16 | `auto_backup_last_*` | the backup job |
 
 **Evidence:** Found by searching `app/src/main/java` for `.edit()` outside the settings screens, 2026-11-23. A key added later that the app writes while running must join this table.
 
 **Acceptance:** A unit test writes each key in the table and finds no job scheduled and the content hash unchanged; writing a user setting such as `PREF_RUN_ON_WIFI` schedules the job.
 
-**Since:** 2026-11-23 · builder · own words
+**Since:** 2026-11-24 · builder · own words
 
 ### D-R14 · No backup during import or export
 

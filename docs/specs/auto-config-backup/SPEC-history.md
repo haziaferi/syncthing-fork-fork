@@ -38,3 +38,4 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-24 · R08 · kind · A → I, checked in Syncthing v2.1.7 · builder
 - 2026-11-24 · R13 · changed · retention failure reason, skip only while a backup exists · owner
 - 2026-11-24 · R12 · changed · name no earlier than the newest backup, wall clock can run back · builder
+- 2026-11-24 · R22 · changed · share screen keys added, owner-approved · builder

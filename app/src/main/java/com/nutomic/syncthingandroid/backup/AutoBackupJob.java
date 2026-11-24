@@ -41,7 +41,7 @@ public final class AutoBackupJob {
         if (!sRunning.compareAndSet(false, true)) {
             // Another run is in progress; it schedules the next one when it ends. Scheduling
             // here would stop it.
-            AutoBackupScheduler.restorePendingChange(context, clock.nowMillis());
+            AutoBackupScheduler.restorePendingChange(context, clock.nowMillis(), clock);
             return Result.DEFERRED;
         }
         long pendingSince;
@@ -79,7 +79,7 @@ public final class AutoBackupJob {
                 break;
             case INTERRUPTED:
                 // Try again once the manual operation is likely over (R14).
-                AutoBackupScheduler.restorePendingChange(context, pendingSince);
+                AutoBackupScheduler.restorePendingChange(context, pendingSince, clock);
                 AutoBackupScheduler.scheduleIn(context, AutoBackupScheduler.DEBOUNCE_MS);
                 return Result.DEFERRED;
             default:
@@ -87,7 +87,7 @@ public final class AutoBackupJob {
                 // lasting failure does not loop; the next change runs it at once.
                 AutoBackupPrefs.Failure failure = AutoBackupPrefs.lastFailure(prefs);
                 if (failure == null || failure.reason != AutoBackupPrefs.FailureReason.PASSWORD_REMOVED) {
-                    AutoBackupScheduler.restorePendingChange(context, pendingSince);
+                    AutoBackupScheduler.restorePendingChange(context, pendingSince, clock);
                 }
                 result = Result.FAILED;
                 break;

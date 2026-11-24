@@ -120,6 +120,8 @@ public class AutoBackupSchedulerTest {
                 Constants.PREF_DEBUG_FACILITIES_AVAILABLE,
                 Constants.PREF_LAST_BINARY_VERSION,
                 Constants.PREF_BTNSTATE_FORCE_START_STOP,
+                "previously_selected_syncthing_folder",
+                "saved_sub_directory_abcd-1234",
                 AutoBackupPrefs.KEY_LAST_SUCCESS,
                 AutoBackupPrefs.KEY_LAST_FAILURE,
                 AutoBackupPrefs.KEY_LAST_HASH,
