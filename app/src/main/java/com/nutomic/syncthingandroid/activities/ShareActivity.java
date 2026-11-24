@@ -69,7 +69,7 @@ public class ShareActivity extends SyncthingActivity
 
     private Boolean ENABLE_VERBOSE_LOG = false;
 
-    private static final String PREF_PREVIOUSLY_SELECTED_SYNCTHING_FOLDER = "previously_selected_syncthing_folder";
+    public static final String PREF_PREVIOUSLY_SELECTED_SYNCTHING_FOLDER = "previously_selected_syncthing_folder";
 
     public static final String PREF_FOLDER_SAVED_SUBDIRECTORY = "saved_sub_directory_";
 

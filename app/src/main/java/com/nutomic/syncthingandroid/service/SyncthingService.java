@@ -11,6 +11,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import com.google.common.io.Files;
+import com.nutomic.syncthingandroid.backup.AutoBackupGate;
 import com.nutomic.syncthingandroid.R;
 import com.nutomic.syncthingandroid.SyncthingApp;
 import com.nutomic.syncthingandroid.http.PollWebGuiAvailableTask;
@@ -847,6 +848,16 @@ public class SyncthingService extends Service {
      *
      */
     public boolean exportConfig() {
+        // No automatic backup runs while a manual export or import does (spec R14).
+        AutoBackupGate.beginManualOperation();
+        try {
+            return exportConfigGated();
+        } finally {
+            AutoBackupGate.endManualOperation();
+        }
+    }
+
+    private boolean exportConfigGated() {
         Boolean failSuccess = true;
         Log.d(TAG, "exportConfig BEGIN");
 
@@ -922,6 +933,16 @@ public class SyncthingService extends Service {
      * @return True if the import was successful, false otherwise (eg if files aren't found).
      */
     public boolean importConfig() {
+        // No automatic backup runs while a manual export or import does (spec R14).
+        AutoBackupGate.beginManualOperation();
+        try {
+            return importConfigGated();
+        } finally {
+            AutoBackupGate.endManualOperation();
+        }
+    }
+
+    private boolean importConfigGated() {
         Log.d(TAG, "importConfig PRECHECK");
 
         // Check the ZIP exists, matches the password setting, holds the required files and decrypts.

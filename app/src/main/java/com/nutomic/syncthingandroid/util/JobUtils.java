@@ -16,13 +16,16 @@ public class JobUtils {
 
     private static final String TAG = "JobUtils";
 
+    /** Job ID of {@link SyncTriggerJobService}. */
+    public static final int SYNC_TRIGGER_JOB_ID = 0;
+
     public static void scheduleSyncTriggerServiceJob(Context context, int delayInSeconds, boolean startRun) {
         if (delayInSeconds < 0) {
             delayInSeconds = 0;
         }
 
         ComponentName serviceComponent = new ComponentName(context, SyncTriggerJobService.class);
-        JobInfo.Builder builder = new JobInfo.Builder(0, serviceComponent);
+        JobInfo.Builder builder = new JobInfo.Builder(SYNC_TRIGGER_JOB_ID, serviceComponent);
 
         // Wait at least "delayInSeconds".
         builder.setMinimumLatency(delayInSeconds * 1000);
@@ -43,8 +46,12 @@ public class JobUtils {
                 " seconds.");
     }
 
-    public static void cancelAllScheduledJobs(Context context) {
+    /**
+     * Cancels only the sync trigger job. Other jobs, such as a pending automatic config
+     * backup, stay scheduled.
+     */
+    public static void cancelSyncTriggerJob(Context context) {
         JobScheduler jobScheduler = (JobScheduler) context.getSystemService(context.JOB_SCHEDULER_SERVICE);
-        jobScheduler.cancelAll();
+        jobScheduler.cancel(SYNC_TRIGGER_JOB_ID);
     }
 }

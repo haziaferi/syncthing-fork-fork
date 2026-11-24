@@ -7,6 +7,8 @@ import androidx.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.nutomic.syncthingandroid.backup.AutoBackupScheduler;
+import com.nutomic.syncthingandroid.backup.Clock;
 import com.nutomic.syncthingandroid.model.Device;
 import com.nutomic.syncthingandroid.model.Folder;
 import com.nutomic.syncthingandroid.model.FolderIgnoreList;
@@ -1304,11 +1306,15 @@ public class ConfigXml {
             if (!mConfigTempFile.renameTo(mConfigFile)) {
                 Log.w(TAG, "Failed to rename temporary config file to original file");
                 deleteTempConfig(mConfigTempFile);
+                return;
             }
         } catch (SecurityException e) {
             Log.w(TAG, "Failed to rename temporary config file to original file", e);
             deleteTempConfig(mConfigTempFile);
+            return;
         }
+        // A saved config is a change for the automatic backup (spec R13).
+        AutoBackupScheduler.noteChange(mContext, Clock.SYSTEM);
     }
 
     private void deleteTempConfig(File tempFile) {
