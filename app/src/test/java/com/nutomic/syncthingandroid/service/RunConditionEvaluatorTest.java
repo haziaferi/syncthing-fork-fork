@@ -374,14 +374,29 @@ public class RunConditionEvaluatorTest {
     // SPEC:R07
     @Test
     public void unvalidatedWifi_mobileAllowed_runs() {
+        prefs.edit().putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true).commit();
+        // Mobile data is connected but not the default network, so only the Wi-Fi route can say yes.
+        Decision d = decide(unvalidatedWifi().transport(Transport.WIFI).mobileConnected(true).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_WIFI);
+    }
+
+    // SPEC:R07
+    @Test
+    public void unvalidatedWifi_roamingDisallowed_doesNotRun() {
+        // Abroad: captive Wi-Fi plus roaming mobile data, which carries the traffic.
         prefs.edit()
                 .putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true)
                 .putBoolean(Constants.PREF_RUN_ON_ROAMING, false)
                 .commit();
-        // Roaming blocks the mobile route, so only the Wi-Fi route can say yes.
         Decision d = decide(unvalidatedWifi().transport(Transport.MOBILE).mobileConnected(true).roaming(true).build());
-        assertThat(d.shouldRun).isTrue();
-        assertThat(d.reasons).contains(Reason.ON_WIFI);
+        assertThat(d.shouldRun).isFalse();
+        assertThat(d.reasons).contains(Reason.WIFI_WITHOUT_INTERNET);
+
+        String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "abc";
+        prefs.edit().putBoolean(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(obj), true).commit();
+        DeviceConditions onWifiRoute = unvalidatedWifi().transport(Transport.WIFI).mobileConnected(true).roaming(true).build();
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, onWifiRoute, obj)).isFalse();
     }
 
     // SPEC:R07

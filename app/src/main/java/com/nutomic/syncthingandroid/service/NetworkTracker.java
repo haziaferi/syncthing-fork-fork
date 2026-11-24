@@ -28,9 +28,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Follows the connected physical networks through a {@link ConnectivityManager.NetworkCallback}
- * (spec R03, R05, R08). The only class that asks Android about networks.
- * The callback's request excludes VPNs, so a VPN never shows up here.
+ * Reports the connected physical networks (spec R03, R05, R08). The only class that asks
+ * Android about networks. A {@link ConnectivityManager.NetworkCallback} says when to look
+ * again; {@link #snapshot()} always reads the networks from Android itself, and VPNs are left out.
  */
 final class NetworkTracker {
 
@@ -45,7 +45,10 @@ final class NetworkTracker {
     private final ConnectivityManager mConnectivityManager;
     private final Listener mListener;
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
-    /** Guarded by itself; written on the connectivity thread, read on the main thread. */
+    /**
+     * Capabilities as the callback delivered them, kept for the Wi-Fi name (API 31+ includes
+     * it only there). Guarded by itself; written on the connectivity thread.
+     */
     private final Map<Network, NetworkCapabilities> mNetworks = new HashMap<>();
     @Nullable private ConnectivityManager.NetworkCallback mCallback;
 
@@ -59,40 +62,16 @@ final class NetworkTracker {
         if (mCallback != null) {
             return;
         }
-        seed();
         mCallback = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                 ? new Callback(ConnectivityManager.NetworkCallback.FLAG_INCLUDE_LOCATION_INFO)
                 : new Callback();
         try {
             mConnectivityManager.registerNetworkCallback(new NetworkRequest.Builder().build(), mCallback);
         } catch (RuntimeException e) {
-            // Android limits the callbacks per app; without one the 15-minute re-check still runs.
+            // Android limits the callbacks per app. Without one, the screen-on and 15-minute
+            // re-checks still read the networks afresh through snapshot().
             Log.e(TAG, "registerNetworkCallback failed", e);
             mCallback = null;
-        }
-    }
-
-    /**
-     * Reads the networks already connected, so the first decision does not see "no network"
-     * (and flight mode) before the callback reports them. On API 31+ these capabilities carry
-     * no Wi-Fi name; the callback brings it moments later.
-     */
-    @SuppressWarnings("deprecation")
-    private void seed() {
-        Network[] all;
-        try {
-            all = mConnectivityManager.getAllNetworks();
-        } catch (RuntimeException e) {
-            Log.w(TAG, "getAllNetworks failed", e);
-            return;
-        }
-        synchronized (mNetworks) {
-            for (Network network : all) {
-                NetworkCapabilities caps = mConnectivityManager.getNetworkCapabilities(network);
-                if (caps != null && !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                    mNetworks.put(network, caps);
-                }
-            }
         }
     }
 
@@ -111,16 +90,44 @@ final class NetworkTracker {
         mMainHandler.removeCallbacksAndMessages(null);
     }
 
-    /** The connected physical networks, the default one marked. */
+    /**
+     * The connected physical networks, the default one marked, read from Android now: a missed
+     * callback (#405) or one never registered cannot leave a network behind (spec R04). The
+     * callback's own capabilities are used only for the Wi-Fi name, which from API 31 is not in
+     * {@link ConnectivityManager#getNetworkCapabilities}.
+     */
+    @SuppressWarnings("deprecation")
     List<NetworkState> snapshot() {
-        Map<Network, NetworkCapabilities> copy;
+        Network[] all;
+        try {
+            all = mConnectivityManager.getAllNetworks();
+        } catch (RuntimeException e) {
+            Log.w(TAG, "getAllNetworks failed", e);
+            all = new Network[0];
+        }
+        Map<Network, NetworkCapabilities> fromCallback;
         synchronized (mNetworks) {
-            copy = new HashMap<>(mNetworks);
+            // Forget networks Android no longer has, so the cache cannot grow or go stale.
+            Map<Network, NetworkCapabilities> kept = new HashMap<>();
+            for (Network network : all) {
+                NetworkCapabilities caps = mNetworks.get(network);
+                if (caps != null) {
+                    kept.put(network, caps);
+                }
+            }
+            mNetworks.clear();
+            mNetworks.putAll(kept);
+            fromCallback = kept;
         }
         Network active = mConnectivityManager.getActiveNetwork();
-        List<NetworkState> states = new ArrayList<>(copy.size());
-        for (Map.Entry<Network, NetworkCapabilities> e : copy.entrySet()) {
-            states.add(toState(e.getKey(), e.getValue(), e.getKey().equals(active)));
+        List<NetworkState> states = new ArrayList<>(all.length);
+        for (Network network : all) {
+            NetworkCapabilities caps = mConnectivityManager.getNetworkCapabilities(network);
+            if (caps == null || caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                continue;
+            }
+            NetworkCapabilities nameSource = fromCallback.containsKey(network) ? fromCallback.get(network) : caps;
+            states.add(toState(network, caps, nameSource, network.equals(active)));
         }
         return states;
     }
@@ -141,14 +148,15 @@ final class NetworkTracker {
         return Transport.OTHER;
     }
 
-    private NetworkState toState(Network network, NetworkCapabilities caps, boolean isDefault) {
+    private NetworkState toState(Network network, NetworkCapabilities caps, NetworkCapabilities nameSource,
+                                 boolean isDefault) {
         Transport kind = kindOf(caps);
         boolean validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
         boolean metered = !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
         boolean wifiInfoAvailable = false;
         String ssid = null;
         if (kind == Transport.WIFI) {
-            WifiInfo info = wifiInfo(caps);
+            WifiInfo info = wifiInfo(nameSource);
             if (info != null) {
                 wifiInfoAvailable = true;
                 ssid = info.getSSID();
@@ -207,16 +215,6 @@ final class NetworkTracker {
         @Override
         public void onAvailable(@NonNull Network network) {
             // Before API 26, onCapabilitiesChanged is not guaranteed to follow.
-            NetworkCapabilities caps = mConnectivityManager.getNetworkCapabilities(network);
-            if (caps == null) {
-                return;
-            }
-            synchronized (mNetworks) {
-                if (mNetworks.containsKey(network)) {
-                    return;
-                }
-                mNetworks.put(network, caps);
-            }
             changed();
         }
 

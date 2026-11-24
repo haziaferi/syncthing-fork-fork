@@ -236,8 +236,8 @@ public final class RunConditionEvaluator {
     /**
      * Whether the phone is on Wi-Fi for these conditions (spec R07). Ethernet counts as Wi-Fi.
      * A Wi-Fi without internet counts only if mobile data is allowed by the same conditions
-     * ({@code mobilePrefName}) or no mobile network is connected: otherwise Android would send
-     * Syncthing's internet traffic over mobile data.
+     * ({@code mobilePrefName}, and roaming permitting) or no mobile network is connected:
+     * otherwise Android would send Syncthing's internet traffic over mobile data.
      */
     private static Check checkWifi(SharedPreferences prefs, DeviceConditions device, String prefName,
                                    String mobilePrefName) {
@@ -248,7 +248,11 @@ public final class RunConditionEvaluator {
             return new Check(true, Reason.ON_WIFI);
         }
         if (device.wifiConnected) {
-            if (device.wifiValidated || prefs.getBoolean(mobilePrefName, false) || !device.mobileConnected) {
+            // Mobile data counts as allowed only if roaming does not rule it out; objects have
+            // no roaming option of their own and follow the app's.
+            boolean mobileAllowed = prefs.getBoolean(mobilePrefName, false)
+                    && (prefs.getBoolean(Constants.PREF_RUN_ON_ROAMING, false) || !device.roaming);
+            if (device.wifiValidated || mobileAllowed || !device.mobileConnected) {
                 return new Check(true, Reason.ON_WIFI);
             }
             return new Check(false, Reason.WIFI_WITHOUT_INTERNET);

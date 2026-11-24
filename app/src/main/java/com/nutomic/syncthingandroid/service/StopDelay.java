@@ -61,6 +61,22 @@ final class StopDelay {
         return next;
     }
 
+    /**
+     * Forgets every key but {@code keep}. Used when Syncthing stops: folders and devices are
+     * not checked while it is stopped, so a "met" from before must not hold them later.
+     */
+    synchronized void clearExcept(String keep) {
+        Boolean last = lastResult.get(keep);
+        Long since = unmetSince.get(keep);
+        clear();
+        if (last != null) {
+            lastResult.put(keep, last);
+        }
+        if (since != null) {
+            unmetSince.put(keep, since);
+        }
+    }
+
     /** Forgets every key, so the next unmet result acts at once. */
     synchronized void clear() {
         lastResult.clear();

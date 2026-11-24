@@ -9,7 +9,9 @@ import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.os.Looper;
+import android.os.PowerManager;
 
 import androidx.preference.PreferenceManager;
 import androidx.test.core.app.ApplicationProvider;
@@ -22,6 +24,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowNetwork;
 import org.robolectric.shadows.ShadowNetworkCapabilities;
+import org.robolectric.shadows.ShadowNetworkInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class RunConditionMonitorTest {
 
     private static final Network WIFI = ShadowNetwork.newInstance(11);
+    private static final Network MOBILE = ShadowNetwork.newInstance(12);
 
     private Context context;
     private SharedPreferences prefs;
@@ -70,17 +74,41 @@ public class RunConditionMonitorTest {
         return callbacks.iterator().next();
     }
 
-    private void wifiUp() {
+    /** Connects a network the way a device does: Android knows it, then the callback reports it. */
+    @SuppressWarnings("deprecation")
+    private void up(Network network, int transport, int legacyType, int... capabilities) {
         NetworkCapabilities caps = ShadowNetworkCapabilities.newInstance();
-        shadowOf(caps).addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
-        shadowOf(caps).addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-        shadowOf(caps).addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
-        callback().onCapabilitiesChanged(WIFI, caps);
+        shadowOf(caps).addTransportType(transport);
+        for (int c : capabilities) {
+            shadowOf(caps).addCapability(c);
+        }
+        shadowOf(cm).addNetwork(network, ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED,
+                legacyType, 0, true, NetworkInfo.State.CONNECTED));
+        shadowOf(cm).setNetworkCapabilities(network, caps);
+        callback().onCapabilitiesChanged(network, caps);
         idle();
     }
 
+    private void wifiUp() {
+        up(WIFI, NetworkCapabilities.TRANSPORT_WIFI, ConnectivityManager.TYPE_WIFI,
+                NetworkCapabilities.NET_CAPABILITY_VALIDATED, NetworkCapabilities.NET_CAPABILITY_NOT_METERED,
+                NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING);
+    }
+
+    private void mobileUp() {
+        up(MOBILE, NetworkCapabilities.TRANSPORT_CELLULAR, ConnectivityManager.TYPE_MOBILE,
+                NetworkCapabilities.NET_CAPABILITY_VALIDATED, NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING);
+    }
+
     private void wifiLost() {
+        shadowOf(cm).removeNetwork(WIFI);
         callback().onLost(WIFI);
+        idle();
+    }
+
+    private void powerSave(boolean on) {
+        shadowOf(context.getSystemService(PowerManager.class)).setIsPowerSaveMode(on);
+        monitor.updateShouldRunDecision();
         idle();
     }
 
@@ -169,5 +197,37 @@ public class RunConditionMonitorTest {
         assertThat(monitor.checkObjectSyncConditions(folder)).isTrue();
         idleFor(11_000);
         assertThat(monitor.checkObjectSyncConditions(folder)).isFalse();
+    }
+
+    // SPEC:R09
+    @Test
+    public void objectHold_notCarriedOverAStop() {
+        // App runs on Wi-Fi or mobile data; the folder on Wi-Fi only.
+        prefs.edit().putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true).commit();
+        String folder = Constants.PREF_OBJECT_PREFIX_FOLDER + "abc";
+        wifiUp();
+        assertThat(monitor.checkObjectSyncConditions(folder)).isTrue();
+
+        powerSave(true);
+        idleFor(11_000);
+        assertThat(decisions).containsExactly(true, false).inOrder();
+
+        wifiLost();
+        mobileUp();
+        powerSave(false);
+        assertThat(decisions).containsExactly(true, false, true).inOrder();
+        assertThat(monitor.checkObjectSyncConditions(folder)).isFalse();
+    }
+
+    // SPEC:R04
+    @Test
+    public void screenOn_catchesMissedWifiLoss() {
+        wifiUp();
+        // The vendor drops the onLost callback: Android no longer has the Wi-Fi.
+        shadowOf(cm).removeNetwork(WIFI);
+        context.sendBroadcast(new Intent(Intent.ACTION_SCREEN_ON));
+        idle();
+        idleFor(11_000);
+        assertThat(decisions).containsExactly(true, false).inOrder();
     }
 }

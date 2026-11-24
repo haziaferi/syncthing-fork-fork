@@ -142,8 +142,8 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 | Situation | Counts as |
 |---|---|
 | a validated Wi-Fi is connected | Wi-Fi |
-| a Wi-Fi without internet is connected, and mobile data is allowed by the conditions being checked or no mobile network is connected | Wi-Fi |
-| a Wi-Fi without internet is connected, mobile data is not allowed, and a mobile network is connected | not Wi-Fi, with its own reason in the explanation |
+| a Wi-Fi without internet is connected, and mobile data is allowed by the conditions being checked (with the app's roaming setting permitting it while roaming) or no mobile network is connected | Wi-Fi |
+| a Wi-Fi without internet is connected, mobile data is not allowed (or only while not roaming, and it is roaming), and a mobile network is connected | not Wi-Fi, with its own reason in the explanation |
 | Ethernet is connected | Wi-Fi, unmetered, as today (`RunConditionEvaluator.java:318`) |
 | a mobile network is the default network | mobile data |
 | no physical network | flight mode |
@@ -152,7 +152,7 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 
 **Not:** Any connected Wi-Fi counts: under "Wi-Fi only", relays would use mobile data. Only the default network: a local-only Wi-Fi with mobile data off would still count, but with mobile data on and allowed it would read as mobile.
 
-**Since:** 2026-11-24 · owner · agreed rewording
+**Since:** 2026-11-25 · owner · agreed rewording
 
 ### D-R08 · Metered, roaming and Wi-Fi name
 

@@ -68,6 +68,18 @@ public class StopDelayTest {
 
     // SPEC:R09
     @Test
+    public void clearExcept_keepsOnlyThatKey() {
+        delay.effective("", true, 0);
+        delay.effective("", false, 1_000);
+        delay.effective("folder:a", true, 0);
+        delay.clearExcept("");
+        assertThat(delay.effective("folder:a", false, 2_000)).isFalse();
+        assertThat(delay.effective("", false, 2_000)).isTrue();
+        assertThat(delay.nextCheckAt(2_000)).isEqualTo(11_000L);
+    }
+
+    // SPEC:R09
+    @Test
     public void expiredHoldNotChecked_notReportedAgain() {
         // A folder held when Syncthing stops is not checked again; its end must not stay "due".
         delay.effective("folder:a", true, 0);

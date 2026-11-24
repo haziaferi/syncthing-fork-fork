@@ -43,26 +43,6 @@ public class NetworkTrackerTest {
         tracker = new NetworkTracker(context, () -> notified++);
     }
 
-    @SuppressWarnings("deprecation")
-    private void connected(Network network, int legacyType, NetworkCapabilities caps) {
-        shadowOf(cm).addNetwork(network, ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED,
-                legacyType, 0, true, NetworkInfo.State.CONNECTED));
-        shadowOf(cm).setNetworkCapabilities(network, caps);
-    }
-
-    @Test
-    public void start_seedsConnectedNetworks_skipsVpn() {
-        connected(ShadowNetwork.newInstance(7), ConnectivityManager.TYPE_WIFI,
-                caps(NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.NET_CAPABILITY_VALIDATED));
-        connected(ShadowNetwork.newInstance(8), ConnectivityManager.TYPE_VPN,
-                caps(NetworkCapabilities.TRANSPORT_VPN));
-        tracker.start();
-        List<NetworkState> snapshot = tracker.snapshot();
-        assertThat(snapshot).hasSize(1);
-        assertThat(snapshot.get(0).kind).isEqualTo(Transport.WIFI);
-        assertThat(notified).isEqualTo(0);
-    }
-
     @After
     public void tearDown() {
         tracker.stop();
@@ -75,6 +55,14 @@ public class NetworkTrackerTest {
             shadowOf(caps).addCapability(c);
         }
         return caps;
+    }
+
+    /** Makes Android know the network, as it does before any callback. */
+    @SuppressWarnings("deprecation")
+    private void connected(Network network, int legacyType, NetworkCapabilities caps) {
+        shadowOf(cm).addNetwork(network, ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED,
+                legacyType, 0, true, NetworkInfo.State.CONNECTED));
+        shadowOf(cm).setNetworkCapabilities(network, caps);
     }
 
     private ConnectivityManager.NetworkCallback callback() {
@@ -103,14 +91,30 @@ public class NetworkTrackerTest {
         tracker.stop();
     }
 
+    // SPEC:R05
+    @Test
+    public void snapshot_readsConnectedNetworks_skipsVpn() {
+        connected(ShadowNetwork.newInstance(7), ConnectivityManager.TYPE_WIFI,
+                caps(NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.NET_CAPABILITY_VALIDATED));
+        connected(ShadowNetwork.newInstance(8), ConnectivityManager.TYPE_VPN,
+                caps(NetworkCapabilities.TRANSPORT_VPN));
+        tracker.start();
+        List<NetworkState> snapshot = tracker.snapshot();
+        assertThat(snapshot).hasSize(1);
+        assertThat(snapshot.get(0).kind).isEqualTo(Transport.WIFI);
+        assertThat(notified).isEqualTo(0);
+    }
+
     // SPEC:R03
     @Test
-    public void capabilitiesChanged_addsNetworkAndNotifies() {
+    public void capabilitiesChanged_notifies_snapshotReadsNetwork() {
         tracker.start();
         Network wifi = ShadowNetwork.newInstance(1);
-        callback().onCapabilitiesChanged(wifi, caps(NetworkCapabilities.TRANSPORT_WIFI,
+        NetworkCapabilities wifiCaps = caps(NetworkCapabilities.TRANSPORT_WIFI,
                 NetworkCapabilities.NET_CAPABILITY_VALIDATED, NetworkCapabilities.NET_CAPABILITY_NOT_METERED,
-                NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING));
+                NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING);
+        connected(wifi, ConnectivityManager.TYPE_WIFI, wifiCaps);
+        callback().onCapabilitiesChanged(wifi, wifiCaps);
         shadowOf(Looper.getMainLooper()).idle();
 
         assertThat(notified).isEqualTo(1);
@@ -124,26 +128,48 @@ public class NetworkTrackerTest {
     }
 
     @Test
-    public void lost_removesNetwork() {
+    public void lost_notifies_snapshotDropsNetwork() {
         tracker.start();
         Network mobile = ShadowNetwork.newInstance(2);
+        connected(mobile, ConnectivityManager.TYPE_MOBILE, caps(NetworkCapabilities.TRANSPORT_CELLULAR));
         callback().onCapabilitiesChanged(mobile, caps(NetworkCapabilities.TRANSPORT_CELLULAR));
         shadowOf(Looper.getMainLooper()).idle();
         assertThat(tracker.snapshot()).hasSize(1);
         assertThat(tracker.snapshot().get(0).metered).isTrue();
         assertThat(tracker.snapshot().get(0).roaming).isTrue();
 
+        shadowOf(cm).removeNetwork(mobile);
         callback().onLost(mobile);
         shadowOf(Looper.getMainLooper()).idle();
         assertThat(tracker.snapshot()).isEmpty();
         assertThat(notified).isEqualTo(2);
     }
 
+    // SPEC:R04
     @Test
-    public void stop_dropsNetworks() {
+    public void snapshot_dropsNetworkAfterMissedLost() {
         tracker.start();
-        callback().onCapabilitiesChanged(ShadowNetwork.newInstance(3), caps(NetworkCapabilities.TRANSPORT_WIFI));
-        tracker.stop();
+        Network wifi = ShadowNetwork.newInstance(3);
+        NetworkCapabilities wifiCaps = caps(NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        connected(wifi, ConnectivityManager.TYPE_WIFI, wifiCaps);
+        callback().onCapabilitiesChanged(wifi, wifiCaps);
+        // Android drops the Wi-Fi, but onLost never arrives.
+        shadowOf(cm).removeNetwork(wifi);
         assertThat(tracker.snapshot()).isEmpty();
+    }
+
+    // SPEC:R08
+    @Test
+    public void snapshot_takesMeteredFromAndroidNow() {
+        tracker.start();
+        Network wifi = ShadowNetwork.newInstance(4);
+        NetworkCapabilities unmetered = caps(NetworkCapabilities.TRANSPORT_WIFI,
+                NetworkCapabilities.NET_CAPABILITY_VALIDATED, NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+        connected(wifi, ConnectivityManager.TYPE_WIFI, unmetered);
+        callback().onCapabilitiesChanged(wifi, unmetered);
+        // The user marks the Wi-Fi metered; the callback for it is missed.
+        shadowOf(cm).setNetworkCapabilities(wifi,
+                caps(NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.NET_CAPABILITY_VALIDATED));
+        assertThat(tracker.snapshot().get(0).metered).isTrue();
     }
 }

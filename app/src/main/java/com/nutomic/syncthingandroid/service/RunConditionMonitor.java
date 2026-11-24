@@ -405,6 +405,10 @@ public class RunConditionMonitor {
             newShouldRun = false;
         } else {
             newShouldRun = mStopDelay.effective(APP_KEY, rawShouldRun, SystemClock.elapsedRealtime());
+            if (!newShouldRun) {
+                // Folders and devices are not checked while Syncthing is stopped (spec R09).
+                mStopDelay.clearExcept(APP_KEY);
+            }
         }
         scheduleReevaluations();
         if (newShouldRun) {
