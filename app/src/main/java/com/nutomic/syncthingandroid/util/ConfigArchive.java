@@ -3,6 +3,7 @@ package com.nutomic.syncthingandroid.util;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.nutomic.syncthingandroid.backup.AutoBackupPrefs;
 import com.nutomic.syncthingandroid.service.Constants;
 
 import net.lingala.zip4j.ZipFile;
@@ -66,6 +67,11 @@ public final class ConfigArchive {
             Constants.PREF_LOCAL_DEVICE_ID,
             Constants.PREF_LAST_RUN_TIME
     ));
+
+    static {
+        // The automatic backup's status belongs to this device (spec R16).
+        CACHE_PREFS.addAll(AutoBackupPrefs.STATUS_KEYS);
+    }
 
     public enum Check {
         OK,
@@ -283,10 +289,11 @@ public final class ConfigArchive {
 
     /**
      * Replaces all prefs with {@code importable}, then restores the current backup location
-     * and password, and commits.
+     * and password and the device's automatic backup status ({@code keepStatus}), and commits.
      */
     public static boolean applyPrefs(SharedPreferences.Editor editor, Map<String, Object> importable,
-                                     String keepRelPathToZip, String keepPassword) {
+                                     String keepRelPathToZip, String keepPassword,
+                                     Map<String, ?> keepStatus) {
         editor.clear();
         for (Map.Entry<String, Object> e : importable.entrySet()) {
             Log.i(TAG, "Adding pref \"" + e.getKey() + "\" to commit ...");
@@ -294,6 +301,9 @@ public final class ConfigArchive {
         }
         editor.putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, keepRelPathToZip);
         editor.putString(Constants.PREF_BACKUP_PASSWORD, keepPassword);
+        for (Map.Entry<String, ?> e : keepStatus.entrySet()) {
+            putTyped(editor, e.getKey(), e.getValue());
+        }
         return editor.commit();
     }
 

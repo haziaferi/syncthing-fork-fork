@@ -6,6 +6,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.nutomic.syncthingandroid.backup.AutoBackupPrefs;
 import com.nutomic.syncthingandroid.service.Constants;
 
 import org.w3c.dom.Document;
@@ -149,6 +150,13 @@ public final class ConfigImporter {
         }
     }
 
+    /** The problems {@link #checkConfig} finds in {@code config}; empty when there are none. */
+    public static List<String> configProblems(File config) {
+        List<String> problems = new ArrayList<>();
+        checkConfig(config, problems);
+        return problems;
+    }
+
     /** Checks config.xml parses and has the elements the app relies on. */
     private static void checkConfig(File config, List<String> problems) {
         Document doc;
@@ -251,8 +259,14 @@ public final class ConfigImporter {
             if (staged.prefs != null) {
                 String relPathToZip = prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "");
                 String backupPassword = prefs.getString(Constants.PREF_BACKUP_PASSWORD, "");
+                Map<String, Object> keepStatus = new HashMap<>();
+                for (String key : AutoBackupPrefs.STATUS_KEYS) {
+                    if (prefsBefore.containsKey(key)) {
+                        keepStatus.put(key, prefsBefore.get(key));
+                    }
+                }
                 prefsOk = ConfigArchive.applyPrefs(prefs.edit(), ConfigArchive.importablePrefs(staged.prefs),
-                        relPathToZip, backupPassword);
+                        relPathToZip, backupPassword, keepStatus);
             } else {
                 prefsOk = prefs.edit().remove(Constants.PREF_LOCAL_DEVICE_ID).commit();
             }

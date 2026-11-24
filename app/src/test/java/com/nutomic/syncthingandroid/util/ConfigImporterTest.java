@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import androidx.preference.PreferenceManager;
 import androidx.test.core.app.ApplicationProvider;
 
+import com.nutomic.syncthingandroid.backup.AutoBackupPrefs;
 import com.nutomic.syncthingandroid.service.Constants;
 
 import org.junit.Before;
@@ -389,6 +390,38 @@ public class ConfigImporterTest {
         assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
         assertThat(prefs.getString(Constants.PREF_BACKUP_PASSWORD, null)).isEqualTo("pw");
         assertThat(prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null)).isEqualTo("current/config.zip");
+    }
+
+    // SPEC:R16
+    @Test
+    public void commit_keepsDeviceBackupStatus() throws Exception {
+        writeLiveSet(filesDir, "live", VALID_CONFIG);
+        prefs.edit()
+                .putLong(AutoBackupPrefs.KEY_LAST_SUCCESS, 5L)
+                .putString(AutoBackupPrefs.KEY_LAST_HASH, "device")
+                .commit();
+        Map<String, Object> exported = new HashMap<>();
+        exported.put(AutoBackupPrefs.KEY_LAST_SUCCESS, 9L);
+        exported.put(AutoBackupPrefs.KEY_LAST_HASH, "archive");
+        exported.put(AutoBackupPrefs.KEY_LAST_FAILURE, "1;CHECK_FAILED");
+        exported.put("run_on_wifi", false);
+        ConfigImporter.Staged staged = stageFull(exported);
+
+        ConfigImporter.commit(staged, filesDir, prefs, RENAME);
+
+        assertThat(prefs.getLong(AutoBackupPrefs.KEY_LAST_SUCCESS, 0L)).isEqualTo(5L);
+        assertThat(prefs.getString(AutoBackupPrefs.KEY_LAST_HASH, null)).isEqualTo("device");
+        assertThat(prefs.contains(AutoBackupPrefs.KEY_LAST_FAILURE)).isFalse();
+        assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
+    }
+
+    @Test
+    public void configProblems_validAndMalformed() throws Exception {
+        File config = new File(source, Constants.CONFIG_FILE);
+        write(config, VALID_CONFIG);
+        assertThat(ConfigImporter.configProblems(config)).isEmpty();
+        write(config, "<configuration>");
+        assertThat(ConfigImporter.configProblems(config)).hasSize(1);
     }
 
     @Test

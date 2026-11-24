@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import androidx.preference.PreferenceManager;
 import androidx.test.core.app.ApplicationProvider;
 
+import com.nutomic.syncthingandroid.backup.AutoBackupPrefs;
 import com.nutomic.syncthingandroid.service.Constants;
 import com.nutomic.syncthingandroid.util.ConfigArchive.Check;
 
@@ -25,6 +26,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -321,7 +323,7 @@ public class ConfigArchiveTest {
         assertThat(importable).containsKey(Constants.PREF_WIFI_SSID_WHITELIST);
 
         SharedPreferences prefs = realPrefs();
-        assertThat(ConfigArchive.applyPrefs(prefs.edit(), importable, "", "")).isTrue();
+        assertThat(ConfigArchive.applyPrefs(prefs.edit(), importable, "", "", Collections.emptyMap())).isTrue();
         assertThat(prefs.getStringSet(Constants.PREF_WIFI_SSID_WHITELIST, null)).containsExactly("\"Home\"", null);
     }
 
@@ -355,12 +357,23 @@ public class ConfigArchiveTest {
         importable.put(Constants.PREF_WIFI_SSID_WHITELIST, new HashSet<>(Arrays.asList("\"Home\"")));
         importable.put(Constants.PREF_BACKUP_PASSWORD, "from-backup");
 
-        assertThat(ConfigArchive.applyPrefs(prefs.edit(), importable, "keep/path", "keep-pw")).isTrue();
+        assertThat(ConfigArchive.applyPrefs(prefs.edit(), importable, "keep/path", "keep-pw",
+                Collections.emptyMap())).isTrue();
 
         assertThat(prefs.contains("stale")).isFalse();
         assertThat(prefs.getBoolean("run_on_wifi", true)).isFalse();
         assertThat(prefs.getStringSet(Constants.PREF_WIFI_SSID_WHITELIST, null)).containsExactly("\"Home\"");
         assertThat(prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null)).isEqualTo("keep/path");
         assertThat(prefs.getString(Constants.PREF_BACKUP_PASSWORD, null)).isEqualTo("keep-pw");
+    }
+
+    @Test
+    public void importablePrefs_dropsStatusKeys() {
+        Map<String, Object> raw = new HashMap<>();
+        raw.put(AutoBackupPrefs.KEY_LAST_SUCCESS, 9L);
+        raw.put(AutoBackupPrefs.KEY_LAST_FAILURE, "1;CHECK_FAILED");
+        raw.put(AutoBackupPrefs.KEY_LAST_HASH, "archive");
+        raw.put(AutoBackupPrefs.KEY_ENABLED, true);
+        assertThat(ConfigArchive.importablePrefs(raw).keySet()).containsExactly(AutoBackupPrefs.KEY_ENABLED);
     }
 }
