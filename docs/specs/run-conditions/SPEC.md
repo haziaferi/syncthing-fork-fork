@@ -177,15 +177,15 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 
 ### D-R09 · Stop delay
 
-**Rule:** Starting Syncthing and resuming a folder or device happen as soon as the conditions are met. Stopping Syncthing and pausing a folder or device happen only once the conditions have stayed unmet for 10 seconds; if they are met again within that time, nothing stops. The user's force-stop button acts at once.
+**Rule:** Starting Syncthing and resuming a folder or device happen as soon as the conditions are met. Stopping Syncthing and pausing a folder or device happen only once the conditions have stayed unmet for 10 seconds; if they are met again within that time, nothing stops. The user's force-stop button and the end of a time-schedule window act at once, and a folder's or device's wait ends when Syncthing stops.
 
-**Why:** Wi-Fi roaming and mobile handovers drop a network for a moment, and each drop would restart Syncthing or pause folders.
+**Why:** Wi-Fi roaming and mobile handovers drop a network for a moment, and each drop would restart Syncthing or pause folders. The time schedule reschedules its next window from an immediate stop, so holding it would start the next window late.
 
-**Acceptance:** Unit tests: the network drops for 5 seconds and returns, and Syncthing keeps running with folders unpaused; it drops for 11 seconds, and Syncthing stops; force-stop stops at once.
+**Acceptance:** Unit tests: the network drops for 5 seconds and returns, and Syncthing keeps running with folders unpaused; it drops for 11 seconds, and Syncthing stops; force-stop and a time-window end stop at once; a folder's wait is not carried over a stop.
 
 **Not:** Stopping at once: each brief drop restarts Syncthing.
 
-**Since:** 2026-11-24 · owner · agreed rewording
+**Since:** 2026-11-25 · owner · agreed rewording
 
 ### D-R10 · Explanation of the decision
 
@@ -221,7 +221,7 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 - R06 · Physical networks stay visible under a VPN: In the device run, a VPN over Wi-Fi leaves the Wi-Fi network in the snapshot with its metered state.
 - R07 · Which network counts: Unit tests for each row, for the whole-app decision and for per-object conditions.
 - R08 · Metered, roaming and Wi-Fi name: Unit tests: an unmetered Wi-Fi with a metered default network runs under "unmetered Wi-Fi only"; a metered Wi-Fi does not; a whitelisted name runs, and a hidden name gives the location reason.
-- R09 · Stop delay: Unit tests: the network drops for 5 seconds and returns, and Syncthing keeps running with folders unpaused; it drops for 11 seconds, and Syncthing stops; force-stop stops at once.
+- R09 · Stop delay: Unit tests: the network drops for 5 seconds and returns, and Syncthing keeps running with folders unpaused; it drops for 11 seconds, and Syncthing stops; force-stop and a time-window end stop at once; a folder's wait is not carried over a stop.
 - R10 · Explanation of the decision: A unit test for R07's third row finds the new reason in the decision.
 - R13 · Test plan: CI's Build / Build Debug check passes on the pull request, and the emulator and phone runs are logged in the plan's progress section.
 

@@ -219,6 +219,21 @@ public class RunConditionMonitorTest {
         assertThat(monitor.checkObjectSyncConditions(folder)).isFalse();
     }
 
+    // SPEC:R09
+    @Test
+    public void timeWindowEnd_stopsAtOnce() {
+        wifiUp();
+        prefs.edit()
+                .putBoolean(Constants.PREF_RUN_ON_TIME_SCHEDULE, true)
+                .putLong(Constants.PREF_LAST_RUN_TIME, android.os.SystemClock.elapsedRealtime())
+                .commit();
+        Intent windowEnd = new Intent(RunConditionMonitor.ACTION_SYNC_TRIGGER_FIRED)
+                .putExtra(RunConditionMonitor.EXTRA_BEGIN_ACTIVE_TIME_WINDOW, false);
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context).sendBroadcast(windowEnd);
+        idle();
+        assertThat(decisions).containsExactly(true, false).inOrder();
+    }
+
     // SPEC:R04
     @Test
     public void screenOn_catchesMissedWifiLoss() {

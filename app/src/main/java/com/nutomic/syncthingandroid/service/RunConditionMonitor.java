@@ -47,8 +47,11 @@ public class RunConditionMonitor {
     private final Runnable mHoldEnd = this::updateShouldRunDecision;
     private NetworkTracker mNetworkTracker;
     private boolean mShutdown = false;
-    /** Whether the last decision was the user's force-stop, which never waits (spec R09). */
-    private boolean mLastDecisionForceStop = false;
+    /**
+     * Whether the last decision was a stop that never waits: the user's force-stop, or the end
+     * of a time-schedule window, whose job rescheduling relies on an immediate stop (spec R09).
+     */
+    private boolean mLastDecisionStopsAtOnce = false;
 
     public static final String ACTION_SYNC_TRIGGER_FIRED =
         ".service.RunConditionMonitor.ACTION_SYNC_TRIGGER_FIRED";
@@ -399,8 +402,8 @@ public class RunConditionMonitor {
 
         boolean rawShouldRun = decideShouldRun();
         boolean newShouldRun;
-        if (mLastDecisionForceStop) {
-            // The user's force-stop never waits, and nothing it stopped is held (spec R09).
+        if (mLastDecisionStopsAtOnce) {
+            // Force-stop and a time-window end never wait, and nothing they stopped is held (spec R09).
             mStopDelay.clear();
             newShouldRun = false;
         } else {
@@ -489,7 +492,8 @@ public class RunConditionMonitor {
         RunConditionEvaluator.Decision decision = RunConditionEvaluator.decide(
                 mPreferences, device, SystemClock.elapsedRealtime(), mTimeConditionMatch);
         mTimeConditionMatch = decision.timeConditionMatch;
-        mLastDecisionForceStop = decision.reasons.contains(RunConditionEvaluator.Reason.FORCE_STOP);
+        mLastDecisionStopsAtOnce = decision.reasons.contains(RunConditionEvaluator.Reason.FORCE_STOP)
+                || decision.reasons.contains(RunConditionEvaluator.Reason.NOT_WITHIN_TIME_FRAME);
         mRunDecisionExplanation = formatExplanation(res, decision);
         LogV("decideShouldRun: " + device + ", reasons=" + decision.reasons + " => " + decision.shouldRun);
         return decision.shouldRun;
