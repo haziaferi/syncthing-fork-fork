@@ -39,3 +39,5 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-24 · R13 · changed · retention failure reason, skip only while a backup exists · owner
 - 2026-11-24 · R12 · changed · name no earlier than the newest backup, wall clock can run back · builder
 - 2026-11-24 · R22 · changed · share screen keys added, owner-approved · builder
+- 2026-11-24 · R02 · changed · layout and wording from an app-wide design pass · owner
+- 2026-11-24 · R17 · changed · behaviour of each control settled, placement left to R02 · owner
