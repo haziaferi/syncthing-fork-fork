@@ -27,7 +27,7 @@ Kinds: O owner rule · D decided · I inherited · A assumed · Q open.
 | D-R14 | No backup during import or export | 4. When a backup runs |
 | D-R15 | Off by default | 4. When a backup runs |
 | D-R16 | Feature settings and status | 5. Status and restore |
-| D-R17 | Settings and restore screen | 5. Status and restore |
+| D-R17 | Settings and restore controls | 5. Status and restore |
 | D-R19 | Password removed or changed | 6. Edge cases |
 | D-R18 | Test plan | 7. Test plan |
 | D-R20 | Off-device upload | Out of scope |
@@ -69,11 +69,13 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 ### D-R02 · Feature in scope, interface by discussion
 
-**Rule:** Automatic config backup is built in this fork. Its screens and wording are settled with the owner in the planned interface discussion before they are built.
+**Rule:** Automatic config backup is built in this fork. Its behaviour is settled in R17. The layout and wording of its controls are settled with the owner in a design pass over the whole app's interface, done with the design skills, before the screen is built.
+
+**Why:** The owner wants the backup controls designed together with the rest of the app's UI, not on their own.
 
 **Acceptance:** none: a scope and working-practice decision.
 
-**Since:** 2026-11-23 · owner · agreed rewording
+**Since:** 2026-11-24 · owner · agreed rewording
 
 ## 2. The archive
 
@@ -315,25 +317,31 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 
 **Since:** 2026-11-23 · builder · own words
 
-### D-R17 · Settings and restore screen
+### D-R17 · Settings and restore controls
 
-**Rule:** The Import & Export screen holds the items below. Their layout and wording are settled in the interface discussion (R02) before they are built.
+**Rule:** The app offers the controls below and they behave as each row says. Where they sit and how they are worded come from the design pass (R02).
 
 **Why:** Restoring today means copying a backup onto the manual export path by hand.
 
 **Values:**
 
-| Item | Does |
+| Control | Behaviour |
 |---|---|
-| switch | turns the feature on or off (R15) |
-| backup folder | shows and edits the folder (R09) |
-| status line | "Last automatic backup: <date>", or the last failure's reason |
-| "Restore automatic backup" | lists the backups newest first and imports the chosen one through the all-or-nothing import |
-| notification | shown only while the feature is on and no backup has succeeded for 7 days with a change waiting |
+| switch | turns the feature on or off (R15); with no backup password set, a tap opens the password dialog, and the switch turns on only once a password is saved there |
+| turning off | stops new backups only; existing backups stay in the folder and in the restore list, with no prompt |
+| backup folder | a typed path relative to shared storage, like the manual export's path (R09) |
+| status | the switch's summary: the time of the last good backup as date and time in the phone's date format, or the last failure and its reason, or that no backup exists yet |
+| failure tap | opens the fix: no storage access opens the permission screen, an unwritable folder opens the folder editor, a removed password opens the password dialog; any other reason opens the log |
+| restore | available whenever Syncthing runs, whether the feature is on or off; lists the backups in the backup folder newest first and imports the chosen one through the all-or-nothing import |
+| restore password | when no password is set or the set one does not open the backup, a dialog asks for that backup's password; if the restore works and no password was set before, the entered one becomes the backup password |
+| restored on or off | the backup's own `auto_backup_enabled` is restored like any other setting (R16) |
+| notification | shown only while the feature is on and no backup has succeeded for 7 days with a change waiting; gives the reason, opens the backup settings on tap, and goes away after the next good backup |
 
-**Acceptance:** On the device run (R18): turn the feature on, see the status line update after a change, and restore the second-newest backup from the list onto a cleared debug install.
+**Acceptance:** On the device run (R18): turn the feature on with no password set and see the password dialog; see the status update after a change; restore the second-newest backup from the list onto a cleared debug install, entering its password when asked.
 
-**Since:** 2026-11-23 · owner · agreed rewording
+**Not:** A system folder picker: writing through document URIs would rework the writer, retention and the restore list (R09 to R12). A "Back up now" control: backups follow changes (R13), and the manual export covers an on-demand copy. Asking to delete backups when turning off: it risks deleting the only copy. Relative times such as "2 hours ago": they do not match the dated names in the restore list.
+
+**Since:** 2026-11-24 · owner · agreed rewording
 
 ## 6. Edge cases
 
@@ -378,7 +386,7 @@ A phone that is lost, reset or replaced takes its Syncthing configuration with i
 - R14 · No backup during import or export: A unit test with a pending rollback marker runs the backup job. It writes no file and schedules itself again.
 - R15 · Off by default: A unit test reads `auto_backup_enabled` on fresh preferences and gets false; no job is scheduled until it is turned on.
 - R16 · Feature settings and status: A unit test imports an archive whose settings hold the status keys, and the device's own status values are unchanged.
-- R17 · Settings and restore screen: On the device run (R18): turn the feature on, see the status line update after a change, and restore the second-newest backup from the list onto a cleared debug install.
+- R17 · Settings and restore controls: On the device run (R18): turn the feature on with no password set and see the password dialog; see the status update after a change; restore the second-newest backup from the list onto a cleared debug install, entering its password when asked.
 - R19 · Password removed or changed: Unit tests clear the password (the feature is off, and the failure reason names the password) and change it (the next backup opens only with the new password).
 - R18 · Test plan: CI's Build / Build Debug check passes on the pull request, and the device run is logged in the plan's progress section.
 
