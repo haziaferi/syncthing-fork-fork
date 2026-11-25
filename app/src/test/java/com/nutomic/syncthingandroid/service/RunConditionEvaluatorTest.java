@@ -497,4 +497,39 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).contains(Reason.LOCATION_UNAVAILABLE);
         assertThat(d.reasons).doesNotContain(Reason.NOT_ON_WHITELISTED_WIFI);
     }
+
+    /** R07's table, row by row, for a folder's own conditions. */
+    // SPEC:R07
+    @Test
+    public void objectConditions_followEachR07Row() {
+        String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "rows";
+        String objMobile = Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(obj);
+
+        // Row 1: a validated Wi-Fi counts, with mobile data connected and not allowed.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, device().transport(Transport.WIFI)
+                .wifiConnected(true).wifiValidated(true).mobileConnected(true).build(), obj)).isTrue();
+
+        // Row 2: a Wi-Fi without internet counts when no mobile network is connected.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs,
+                unvalidatedWifi().transport(Transport.WIFI).build(), obj)).isTrue();
+
+        // Row 3: it does not count when mobile data is connected and not allowed for the folder.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs,
+                unvalidatedWifi().transport(Transport.MOBILE).mobileConnected(true).build(), obj)).isFalse();
+
+        // Row 4: Ethernet counts as unmetered Wi-Fi, even beside a metered Wi-Fi.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, device().transport(Transport.ETHERNET)
+                .ethernetConnected(true).wifiConnected(true).wifiValidated(true).wifiMetered(true).build(), obj)).isTrue();
+
+        // Row 5: a default mobile network counts as mobile data, so only the folder's mobile setting lets it run.
+        DeviceConditions mobileOnly = device().transport(Transport.MOBILE).mobileConnected(true).build();
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, mobileOnly, obj)).isFalse();
+        prefs.edit().putBoolean(objMobile, true).commit();
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, mobileOnly, obj)).isTrue();
+        prefs.edit().putBoolean(objMobile, false).commit();
+
+        // Row 6: no physical network; folders have no flight-mode setting of their own.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs,
+                device().transport(Transport.NO_ACTIVE_NETWORK).build(), obj)).isFalse();
+    }
 }

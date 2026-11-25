@@ -18,3 +18,5 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-25 · R07 · changed · roaming setting applies to mobile data allowed for a no-internet Wi-Fi · owner
 - 2026-11-25 · R09 · changed · time-window end stops at once; object waits end at a stop · owner
 - 2026-11-25 · R06 · kind · A → D, confirmed on Android 11 with Tor VPN over Wi-Fi · builder
+- 2026-11-25 · R04 · changed · 15 minutes of awake time, deep sleep not counted · owner
+- 2026-11-25 · R13 · changed · phone runs replace emulators; API 24 and 30 unit tests · owner

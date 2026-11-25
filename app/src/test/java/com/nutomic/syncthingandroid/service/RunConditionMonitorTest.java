@@ -234,6 +234,26 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true, false).inOrder();
     }
 
+    // SPEC:R05
+    @Test
+    @SuppressWarnings("deprecation")
+    public void vpnOverWifi_decidesOnTheWifi() {
+        // As on the A6013 (Android 11): the VPN lists the transport it runs over too.
+        Network vpn = ShadowNetwork.newInstance(13);
+        NetworkCapabilities vpnCaps = ShadowNetworkCapabilities.newInstance();
+        shadowOf(vpnCaps).addTransportType(NetworkCapabilities.TRANSPORT_VPN);
+        shadowOf(vpnCaps).addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+        shadowOf(cm).addNetwork(vpn, ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED,
+                ConnectivityManager.TYPE_VPN, 0, true, NetworkInfo.State.CONNECTED));
+        shadowOf(cm).setNetworkCapabilities(vpn, vpnCaps);
+        // "Unmetered Wi-Fi only" (the default) and a metered-looking VPN must not matter.
+        wifiUp();
+        assertThat(decisions).containsExactly(true);
+        wifiLost();
+        idleFor(11_000);
+        assertThat(decisions).containsExactly(true, false).inOrder();
+    }
+
     // SPEC:R04
     @Test
     public void screenOn_catchesMissedWifiLoss() {

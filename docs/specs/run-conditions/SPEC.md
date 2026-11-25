@@ -87,15 +87,15 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 
 ### D-R04 · Re-check without a callback
 
-**Rule:** While the monitor exists, it also re-evaluates the decision when the screen turns on, and 15 minutes after the last evaluation. Doze may defer the timed re-check; it then runs when the device wakes.
+**Rule:** While the monitor exists, it also re-evaluates the decision when the screen turns on, and after 15 minutes of awake time since the last evaluation. Time the device spends in deep sleep does not count toward the 15 minutes.
 
-**Why:** A vendor that drops callbacks would otherwise leave the decision wrong until something else changes (#405).
+**Why:** A vendor that drops callbacks would otherwise leave the decision wrong until something else changes (#405). The screen-on check covers a wake the user causes; the timed check covers a phone left awake.
 
 **Acceptance:** A unit test advances the clock 15 minutes after an evaluation and sees a new evaluation, and sees one when a screen-on broadcast arrives.
 
-**Not:** Callbacks only: a missed callback leaves the state wrong with no limit.
+**Not:** Callbacks only: a missed callback leaves the state wrong with no limit. A wake-up alarm every 15 minutes: it would wake a sleeping phone only to re-check, at a cost in battery.
 
-**Since:** 2026-11-24 · owner · agreed rewording
+**Since:** 2026-11-25 · owner · agreed rewording
 
 ## 3. Reading the network
 
@@ -205,13 +205,14 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 
 | Level | Covers | Rules | Runs |
 |---|---|---|---|
-| Unit (Robolectric) | callbacks, re-check, snapshot, which network counts, metered, roaming, name, stop delay, explanation | R03 R04 R05 R07 R08 R09 R10 | every commit, in CI's `testDebugUnitTest` |
-| Emulators `Api32_Alarm` (API 32) and `Medium_Phone` (API 36) | Wi-Fi on and off, metered toggle, VPN over Wi-Fi | R03 R06 R08 | once before merge |
-| Owner's phone, `.debug` build beside the release | Wi-Fi to mobile handover, metered toggle, VPN, Wi-Fi without internet, a short drop | R06 R07 R09 | once before merge |
+| Unit (Robolectric), at API 37 and, for the tracker's older paths, API 24 and 30 | callbacks, re-check, snapshot, which network counts, metered, roaming, name, stop delay, explanation | R03 R04 R05 R07 R08 R09 R10 | every commit, in CI's `testDebugUnitTest` |
+| Owner's phones without SIM (OnePlus LE2123 Android 14, A6013 Android 11), `.debug` build from CI beside the release | Wi-Fi off and on, a short drop, metered toggle, VPN over Wi-Fi | R03 R06 R08 R09 | once before merge |
 
-**Acceptance:** CI's Build / Build Debug check passes on the pull request, and the emulator and phone runs are logged in the plan's progress section.
+**Acceptance:** CI's Build / Build Debug check passes on the pull request, and the phone runs are logged in the plan's progress section.
 
-**Since:** 2026-11-24 · owner · agreed rewording
+**Not:** Emulator runs: the emulators do not start on the build host (they exit after the hypervisor starts). Mobile data checks on a device: the phones have no SIM, so the handover and Wi-Fi-without-internet-plus-mobile rows rest on unit tests.
+
+**Since:** 2026-11-25 · owner · agreed rewording
 
 ## Acceptance list
 
@@ -223,7 +224,7 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 - R08 · Metered, roaming and Wi-Fi name: Unit tests: an unmetered Wi-Fi with a metered default network runs under "unmetered Wi-Fi only"; a metered Wi-Fi does not; a whitelisted name runs, and a hidden name gives the location reason.
 - R09 · Stop delay: Unit tests: the network drops for 5 seconds and returns, and Syncthing keeps running with folders unpaused; it drops for 11 seconds, and Syncthing stops; force-stop and a time-window end stop at once; a folder's wait is not carried over a stop.
 - R10 · Explanation of the decision: A unit test for R07's third row finds the new reason in the decision.
-- R13 · Test plan: CI's Build / Build Debug check passes on the pull request, and the emulator and phone runs are logged in the plan's progress section.
+- R13 · Test plan: CI's Build / Build Debug check passes on the pull request, and the phone runs are logged in the plan's progress section.
 
 ## Out of scope
 
