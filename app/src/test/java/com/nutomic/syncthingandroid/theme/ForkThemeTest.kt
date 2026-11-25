@@ -33,4 +33,13 @@ class ForkThemeTest {
         val s = schemeFor(context, ColourSource.WALLPAPER, false)
         assertThat(Contrast.ratio(s.onSurfaceVariant.toArgb(), s.surface.toArgb())).isAtLeast(7.0)
     }
+
+    @Test
+    fun readPref_wrongType_isDefault() {
+        val prefs = context.getSharedPreferences("pref_state_test", Context.MODE_PRIVATE)
+        prefs.edit().clear().putString("k", "x").commit()
+        assertThat(readPref(prefs, "k", false) { it as? Boolean }).isFalse()
+        assertThat(readPref(prefs, "k", "d") { it as? String }).isEqualTo("x")
+        assertThat(readPref(prefs, "missing", 7) { it as? Int }).isEqualTo(7)
+    }
 }

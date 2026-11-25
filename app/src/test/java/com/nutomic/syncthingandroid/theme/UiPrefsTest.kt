@@ -25,6 +25,18 @@ class UiPrefsTest {
         assertThat(UiPrefs.density(prefs)).isEqualTo(UiDensity.COMPACT)
     }
 
+    @Test
+    fun density_wrongType_isStandard() {
+        prefs.edit().clear().putInt(UiPrefs.KEY_UI_DENSITY, 3).commit()
+        assertThat(UiPrefs.density(prefs)).isEqualTo(UiDensity.STANDARD)
+    }
+
+    @Test
+    fun wallpaper_wrongType_isOff() {
+        prefs.edit().clear().putString(UiPrefs.KEY_USE_WALLPAPER_COLOURS, "true").commit()
+        assertThat(UiPrefs.useWallpaper(prefs, 31)).isFalse()
+    }
+
     // SPEC:ui-design:R04
     @Test
     fun wallpaper_belowApi31_isOff() {

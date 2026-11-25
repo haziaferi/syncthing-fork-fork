@@ -17,24 +17,24 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * as state that follows later changes.
  */
 @Composable
-fun <T> rememberPrefState(key: String, default: T): State<T> {
+fun <T> rememberPrefState(key: String, default: T, convert: (Any?) -> T?): State<T> {
     val context = LocalContext.current.applicationContext
-    val flow = remember(context, key) {
-        prefFlow(PreferenceManager.getDefaultSharedPreferences(context), key, default)
-    }
-    return flow.collectAsState(initial = readPref(PreferenceManager.getDefaultSharedPreferences(context), key, default))
+    val prefs = remember(context) { PreferenceManager.getDefaultSharedPreferences(context) }
+    val flow = remember(prefs, key) { prefFlow(prefs, key, default, convert) }
+    val initial = remember(prefs, key) { readPref(prefs, key, default, convert) }
+    return flow.collectAsState(initial = initial)
 }
 
-@Suppress("UNCHECKED_CAST")
-private fun <T> readPref(prefs: SharedPreferences, key: String, default: T): T =
-    if (prefs.contains(key)) (prefs.all[key] as? T) ?: default else default
+/** The stored value converted by [convert]; [default] when the key is missing or holds another type. */
+internal fun <T> readPref(prefs: SharedPreferences, key: String, default: T, convert: (Any?) -> T?): T =
+    prefs.all[key]?.let(convert) ?: default
 
-private fun <T> prefFlow(prefs: SharedPreferences, key: String, default: T): Flow<T> = callbackFlow {
+private fun <T> prefFlow(prefs: SharedPreferences, key: String, default: T, convert: (Any?) -> T?): Flow<T> = callbackFlow {
     // SharedPreferences holds listeners weakly; this reference lives as long as the flow is collected.
     val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, changed ->
-        if (changed == key || changed == null) trySend(readPref(p, key, default))
+        if (changed == key || changed == null) trySend(readPref(p, key, default, convert))
     }
     prefs.registerOnSharedPreferenceChangeListener(listener)
-    trySend(readPref(prefs, key, default))
+    trySend(readPref(prefs, key, default, convert))
     awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
 }.distinctUntilChanged()

@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 
 /**
@@ -21,11 +22,16 @@ import androidx.compose.ui.platform.LocalContext
 fun ForkTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val dark = isSystemInDarkTheme()
-    val useWallpaper by rememberPrefState(UiPrefs.KEY_USE_WALLPAPER_COLOURS, false)
-    val densityKey by rememberPrefState<String?>(UiPrefs.KEY_UI_DENSITY, null)
+    val useWallpaper by rememberPrefState(UiPrefs.KEY_USE_WALLPAPER_COLOURS, false) { it as? Boolean }
+    val densityKey by rememberPrefState<String?>(UiPrefs.KEY_UI_DENSITY, null) { it as? String }
     val source = ThemeChoice.source(useWallpaper, Build.VERSION.SDK_INT)
     val density = UiDensity.entries.firstOrNull { it.key == densityKey } ?: UiDensity.STANDARD
-    val colorScheme = remember(context, source, dark) { schemeFor(context, source, dark) }
+    // Read so that a configuration change recomposes and the wallpaper seed and contrast are read again.
+    LocalConfiguration.current
+    val wallpaper = source == ColourSource.WALLPAPER && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val seed = if (wallpaper) WallpaperScheme.seed(context) else 0
+    val contrast = if (wallpaper) WallpaperScheme.contrastLevel(context) else 0.0
+    val colorScheme = remember(source, dark, seed, contrast) { schemeFor(context, source, dark) }
 
     CompositionLocalProvider(
         LocalStatusColors provides StatusColors.brand(dark),
