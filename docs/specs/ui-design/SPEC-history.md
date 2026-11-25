@@ -1,0 +1,66 @@
+# App-wide UI design spec history
+
+Not a source of current rules: `SPEC.md` is. One line per change, newest at the bottom. Retired wording is in git.
+
+- 2026-11-25 · spec · added · app-wide design pass, from the direction file and the purpose map · owner
+- 2026-11-25 · R01 · added · jobs and how often, glance first · owner
+- 2026-11-25 · R02 · added · scope of the design pass, no rewrite for looks alone · owner
+- 2026-11-25 · R03 · added · registers per module, calm pause and triggered fault · owner
+- 2026-11-25 · R04 · added · brand palette default, wallpaper colours at contrast 0.5 · owner
+- 2026-11-25 · R05 · added · brand palette values from the launcher icon · owner
+- 2026-11-25 · R06 · added · state shown by icon, word and role colour · owner
+- 2026-11-25 · R07 · added · system font and Material 3 type scale · owner
+- 2026-11-25 · R08 · added · Material 3 default shapes · owner
+- 2026-11-25 · R09 · added · Standard and Compact density · owner
+- 2026-11-25 · R10 · added · one token set for Compose and XML · owner
+- 2026-11-25 · R11 · added · Material Symbols vectors, no emoji · owner
+- 2026-11-25 · R12 · added · navigation bar Status, Folders, Devices; drawer removed · owner
+- 2026-11-25 · R13 · added · top bars, open · builder
+- 2026-11-25 · R14 · added · dialogs · owner
+- 2026-11-25 · R15 · added · Settings root order, open · builder
+- 2026-11-25 · R16 · added · per-object run conditions title and order · builder
+- 2026-11-25 · R17 · added · wording style · owner
+- 2026-11-25 · R18 · added · term list · owner
+- 2026-11-25 · R19 · added · paths name their root and wrap at slashes · builder
+- 2026-11-25 · R20 · added · run-state words · owner
+- 2026-11-25 · R21 · added · reason wording, open · builder
+- 2026-11-25 · R22 · added · glossary or manual for beginners, open · owner
+- 2026-11-25 · R23 · added · Status destination layout, open · builder
+- 2026-11-25 · R24 · added · persistent notification, open · builder
+- 2026-11-25 · R25 · added · state-following button, tile adopts it · owner
+- 2026-11-25 · R26 · added · home-screen widget 4x1 to 2x1 · owner
+- 2026-11-25 · R27 · added · launcher shortcuts · owner
+- 2026-11-25 · R28 · added · backup screen layout · owner
+- 2026-11-25 · R29 · added · automatic backup status words · owner
+- 2026-11-25 · R30 · added · backup failure row and fixes · owner
+- 2026-11-25 · R31 · added · restore list and dialogs · owner
+- 2026-11-25 · R32 · added · manual export and import feedback · owner
+- 2026-11-25 · R33 · added · backup password dialog · owner
+- 2026-11-25 · R34 · added · backup on Status and the 7-day notification · owner
+- 2026-11-25 · R35 · added · changes to the backup and run-conditions specs · owner
+- 2026-11-25 · R36 · added · floors and targets · owner
+- 2026-11-25 · R37 · added · TV parity · owner
+- 2026-11-25 · R38 · added · test plan · owner
+- 2026-11-25 · R39 · added · Web GUI content out of scope · builder
+- 2026-11-25 · R40 · added · no restore during onboarding · owner
+- 2026-11-25 · R13 · kind · Q → D, default accepted · owner
+- 2026-11-25 · R15 · kind · Q → D, default accepted · owner
+- 2026-11-25 · R21 · kind · Q → D, reason table accepted · owner
+- 2026-11-25 · R22 · kind · Q → D, glossary plus a "Where to begin" manual · owner
+- 2026-11-25 · R23 · kind · Q → D, default accepted · owner
+- 2026-11-25 · R24 · kind · Q → D, default accepted · owner
+- 2026-11-25 · R38 · changed · test plan covers R13 R15 R21 to R24 · owner
+- 2026-11-25 · R04 · changed · Material Color Utilities source not checked · builder
+- 2026-11-25 · R10 · changed · XML theme in a fork-owned file · owner
+- 2026-11-25 · R41 · added · fork-owned strings and themes, upstream files unchanged · owner
+- 2026-11-25 · R11 · changed · emoji check on fork-owned strings · owner
+- 2026-11-25 · R17 · changed · wording check on fork-owned strings · owner
+- 2026-11-25 · R18 · changed · term check on fork-owned strings · owner
+- 2026-11-25 · R42 · added · screen-by-screen allocation with the design skills · owner
+- 2026-11-25 · R43 · added · live state line on the Run conditions screens · owner
+- 2026-11-25 · R30 · changed · last attempt time, not first failure · builder
+- 2026-11-25 · R32 · changed · restore-from-export-file failures · builder
+- 2026-11-25 · R33 · changed · dialog opened by the switch with no password · builder
+- 2026-11-25 · R01 · changed · override frequency confirmed · owner
+- 2026-11-25 · R38 · changed · test plan covers R41 and R43 · owner
+- 2026-11-25 · R38 · changed · note on spec-blind code citations · builder
