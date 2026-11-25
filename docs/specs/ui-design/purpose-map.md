@@ -1,6 +1,6 @@
-# Purpose map (draft for the owner, 2026-11-25)
+# Purpose map (2026-11-25)
 
-The purpose map says why each part of the app is opened, how it is used, and which design requirements lead there. The design spec in this folder builds on it. Rows marked **(ask)** carry an assumption that the owner has not confirmed yet.
+The purpose map says why each part of the app is opened, how it is used, and which design requirements lead there. The design spec in this folder builds on it. The owner confirmed every value on 2026-11-25. Section 3 records the proposals that came out of the map; the spec holds the decisions.
 
 ## 1. Axes
 
@@ -28,10 +28,10 @@ The modules are grouped by purpose, not by screen. One screen can serve two modu
 | Module | Purpose | Surfaces today (+ planned) | Tone · referent | Frequency | Attention | Stakes | Explains | Consequence | Expertise | Input |
 |---|---|---|---|---|---|---|---|---|---|---|
 | M1 Glance status | is it syncing, and if not, why | persistent notification, toolbar dot and ring, Status tab, drawer header (+ widget) | 0.25 · none; triggered 0.7 · fixed-target on a fault | several a day | glance | low: a wrong belief that it synced | state + one reason | none | everyone | touch; TV via the app |
-| M2 Run control | run now, stop now, or follow my rules | Status tab segmented button, QS Force and Schedule tiles (+ widget toggle, shortcuts) | 0.4 · none | a few a week **(ask)** | glance | data cost when forced on mobile data; battery | state + one reason, and what a tap will do | costs data or battery; always one tap back to "follow rules" | everyone | touch |
+| M2 Run control | run now, stop now, or follow my rules | Status tab segmented button, QS Force and Schedule tiles (+ widget toggle, shortcuts) | 0.4 · none | a few a week | glance | data cost when forced on mobile data; battery | state + one reason, and what a tap will do | costs data or battery; always one tap back to "follow rules" | everyone | touch |
 | M3 Folders and devices | what is in sync with whom; unstick a folder | Folders tab, Devices tab, Recent changes | 0.5 · fixed-target (up to date); triggered 0.75 on a folder error | weekly or bi-monthly (the app itself) | check | missed or conflicting files | state per row | reversible (rescan, pause) | Syncthing-literate | touch, D-pad |
 | M4 Setup and pairing | connect a device, share a folder | Folder and Device editors, QR scanner, device ID dialog, folder picker, folder type, versioning and pull order dialogs, share-request notifications | exempt (task flow) | per setup | task | **files lost**: folder type, delete, ignore patterns, accepting a stranger | none | destroys or overwrites | Syncthing-literate | touch, D-pad |
-| M5 Rules and settings | decide when and how it runs | Settings root and subscreens, Run conditions, per-folder and per-device conditions | exempt (reference) | rare, then tuning | task | data cost if a rule is wrong | what this rule does now **(ask)** | costs data or battery | everyone; experts in Syncthing options | touch, D-pad |
+| M5 Rules and settings | decide when and how it runs | Settings root and subscreens, Run conditions, per-folder and per-device conditions | exempt (reference) | rare, then tuning | task | data cost if a rule is wrong | what the rules decide right now (SPEC R43) | costs data or battery | everyone; experts in Syncthing options | touch, D-pad |
 | M6 Safety net | never lose my setup | Import and Export (+ automatic backup, restore, 7-day notification) | 0.15 · self-history (last good backup); triggered 0.6 after 7 days without a good backup | set once; restore once per phone | check | **setup lost**, or overwritten by an import | last good backup or the failure | overwrites the configuration (import, restore) | everyone | touch, D-pad |
 | M7 Diagnostics | find out what went wrong | Log, Troubleshooting, Web GUI, About, Custom certificate, Experimental | exempt (reference) | rare | investigate | database reset, certificate swap | n/a | destroys (reset database, reset indexes) | expert | touch, D-pad |
 | M8 First run | get it working and trusted | Onboarding (7 pages), key generation | 0.2 · none | once | task | sync broken if a permission is denied | why each permission is needed | reversible | everyone | touch, D-pad |

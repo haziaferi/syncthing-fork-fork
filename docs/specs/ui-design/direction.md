@@ -39,6 +39,10 @@ Pass count: 2 (started 2026-11-25; the backup screen was critiqued by three inde
 | 29 | Beginner help | A glossary screen with info icons in the editors, plus a "Where to begin" manual of four steps (SPEC R22). |
 | 30 | Status layout | State card first, then fault cards, then details (SPEC R23). |
 | 31 | Notification | The state word and a reason, the state button plus Exit, and the word only on the lock screen (SPEC R24). |
+| 32 | Upstream sync | The fork's wording and theme live under new keys in fork-owned files. Upstream's resource files stay unchanged (SPEC R41). |
+| 33 | Screen allocation | Every screen's elements are examined and allocated with visual-craft, the critique and other relevant skills before its plan. This includes the list actions and the Exit button (SPEC R42). |
+| 34 | Override frequency | Run anyway, Pause and Follow rules are used a few times a week. |
+| 35 | Live effect | The Run conditions screens show a live state line above the rules (SPEC R43). |
 
 Rule notes given: none yet.
 

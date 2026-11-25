@@ -26,6 +26,8 @@ Kinds: O owner rule · D decided · I inherited · A assumed · Q open.
 | D-R14 | Dialogs | 3. Navigation and structure |
 | D-R15 | Settings root order | 3. Navigation and structure |
 | D-R16 | Per-folder and per-device run conditions | 3. Navigation and structure |
+| D-R42 | Screen-by-screen allocation | 3. Navigation and structure |
+| D-R41 | Fork-owned strings and themes | 4. Wording |
 | D-R17 | Wording style | 4. Wording |
 | D-R18 | Terms | 4. Wording |
 | D-R19 | Paths and long values | 4. Wording |
@@ -37,6 +39,7 @@ Kinds: O owner rule · D decided · I inherited · A assumed · Q open.
 | D-R25 | State button | 5. Status and glance surfaces |
 | D-R26 | Home-screen widget | 5. Status and glance surfaces |
 | D-R27 | Launcher shortcuts | 5. Status and glance surfaces |
+| D-R43 | Live state on the Run conditions screen | 5. Status and glance surfaces |
 | D-R28 | Backup screen layout | 6. Backup and restore screen |
 | D-R29 | Automatic backup status | 6. Backup and restore screen |
 | D-R30 | Backup failure row | 6. Backup and restore screen |
@@ -87,7 +90,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | As a user, I keep a backup of my setup and restore it on a new phone | backup screen | set once; restore once per phone |
 | As a user, I find out what went wrong | Log, Troubleshooting, Web GUI | rarely |
 
-**Evidence:** The owner's answer, 2026-11-25: glance several times a day, app opened "weekly or bi-monthly". Modules and their axes: purpose map.
+**Evidence:** The owner's answers, 2026-11-25: glance several times a day, app opened "weekly or bi-monthly", overrides a few times a week. Modules and their axes: purpose map.
 
 **Acceptance:** none: the jobs are checked through the rules that serve them.
 
@@ -142,7 +145,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | error | 4.5:1 | 7:1 | 7:1 |
 | outline | 3:1 | 4.5:1 | 7:1 |
 
-**Evidence:** Contrast curves from `ColorSpec2021.java` and `ContrastCurve.java` in material-foundation/material-color-utilities (main), read 2026-11-25. `SchemeTonalSpot(Hct, boolean, double contrastLevel)` builds a scheme at a chosen level. Not checked: the 2021 `SpecVersion` constant name.
+**Evidence:** Contrast curves from `ColorSpec2021.java` and `ContrastCurve.java` in material-foundation/material-color-utilities (main), read 2026-11-25. `SchemeTonalSpot(Hct, boolean, double contrastLevel)` builds a scheme at a chosen level. Not checked: the 2021 `SpecVersion` constant name, and which artifact gives the app Material Color Utilities (no dependency provides it today; the copy inside Material Components is internal).
 
 **Acceptance:** A unit test builds the wallpaper scheme from three seeds at level 0.5 and finds onSurfaceVariant, primary and error at 7:1 or more against surface; with the switch off, every screen uses R05's values.
 
@@ -253,7 +256,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 ### D-R10 · One token set for both stacks
 
-**Rule:** Compose and XML screens read the same colour, type and shape tokens. XML themes extend `Theme.Material3.DayNight` and map R05's roles; hardcoded colours are replaced by roles.
+**Rule:** Compose and XML screens read the same colour, type and shape tokens. The XML theme extends `Theme.Material3.DayNight` and maps R05's roles, in a fork-owned file (R41); hardcoded colours are replaced by roles.
 
 **Values:**
 
@@ -277,7 +280,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 **Evidence:** 148 PNGs beside 56 vectors under `res/drawable*`; emoji in `backup_password_*` strings (`strings.xml:638-642`).
 
-**Acceptance:** A CI check finds no emoji code point in `res/values*/strings.xml`.
+**Acceptance:** A CI check finds no emoji code point in the fork-owned string files (R41), and no screen uses an upstream string that holds one.
 
 **Since:** 2026-11-25 · owner · agreed rewording
 
@@ -354,7 +357,39 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 **Since:** 2026-11-25 · builder · own words
 
+### D-R42 · Screen-by-screen allocation
+
+**Rule:** Before a screen's implementation plan, the screen is examined with visual-craft and design-critique, and every element on it is allocated or re-allocated against this spec. The result is written back here as rules. The allocations below are still open.
+
+**Why:** The owner wants every screen's elements decided with the design skills, not placed one screen at a time without them.
+
+**Values:**
+
+| Screen or element | Open allocation |
+|---|---|
+| Folders and Devices destinations | where "Add folder", "Add device" and "Rescan all" go |
+| Exit floating button (`activity_main.xml:32-44`) | removed or re-placed (Exit is in the overflow menu, R12) |
+| Folder and Device editors, with their dialogs | layout, order of fields, destructive actions |
+| onboarding pages | layout and button sizes inside R07 |
+| Log, Share, QR scanner, folder picker, camera | layout and top bar inside R13 |
+
+**Acceptance:** Each implementation plan cites the rules written for its screens, and no row above is still open when its screen is built.
+
+**Since:** 2026-11-25 · owner · agreed rewording
+
 ## 4. Wording
+
+### D-R41 · Fork-owned strings and themes
+
+**Rule:** The fork's wording lives under new keys in fork-owned files (`values/strings_fork.xml`, with the theme in a fork-owned themes file); upstream's resource files stay unchanged. A screen switches to a fork key when it is built to this spec, and languages without a translation of a fork key show the English.
+
+**Why:** Rewording upstream strings would conflict on every upstream sync, or leave the 43 translations saying the old thing.
+
+**Acceptance:** The implementation plans' diffs leave `res/values*/strings.xml` and the upstream themes files unchanged, except for removals upstream also made.
+
+**Not:** Editing upstream strings in place: each sync may conflict on `strings.xml`. Proposing the wording upstream first: slower, and upstream may decline.
+
+**Since:** 2026-11-25 · owner · agreed rewording
 
 ### D-R17 · Wording style
 
@@ -372,7 +407,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 **Evidence:** Owner rulings 7 and 8, 2026-11-25. Audit: Title Case, sentence case and ALL CAPS side by side; 6 emoji lines; menu paths at `strings.xml:689`, `:696`.
 
-**Acceptance:** A CI check flags strings in ALL CAPS, strings with emoji, and strings containing "Click", "Tap" or "Go to Settings".
+**Acceptance:** A CI check flags, in the fork-owned string files (R41), strings in ALL CAPS, strings with emoji, and strings containing "Click", "Tap" or "Go to Settings".
 
 **Since:** 2026-11-25 · owner · agreed rewording
 
@@ -396,7 +431,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 **Evidence:** Audit counts, 2026-11-25: "WiFi" 26 against "Wi-Fi" 14; four spellings of the web interface; "run condition" 14 against "sync condition" 3.
 
-**Acceptance:** A CI check finds none of the Not column in `res/values/strings.xml`.
+**Acceptance:** A CI check finds none of the Not column in the fork-owned string files (R41).
 
 **Since:** 2026-11-25 · owner · agreed rewording
 
@@ -581,6 +616,16 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 **Since:** 2026-11-25 · owner · agreed rewording
 
+### D-R43 · Live state on the Run conditions screen
+
+**Rule:** The app-wide and per-object Run conditions screens show, above the rules, a one-line card with the rules' current decision: the R06 icon, the R20 word and the R21 short reason. It updates as a rule changes.
+
+**Why:** The user sees a rule's effect at once, without leaving the screen.
+
+**Acceptance:** With Syncthing running on mobile data, turning "Run on mobile data" off changes the card to "Paused by your rules · On mobile data" within the stop delay (run-conditions R09) plus 2 s.
+
+**Since:** 2026-11-25 · owner · agreed rewording
+
 ## 6. Backup and restore screen
 
 ### D-R28 · Backup screen layout
@@ -634,7 +679,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 ### D-R30 · Backup failure row
 
-**Rule:** While the last automatic backup failed, a row under the switch shows the error icon, the reason in the error colour, the time it started failing, and the fix as its action. Selecting the row opens the fix; the switch row keeps its own behaviour.
+**Rule:** While the last automatic backup failed, a row under the switch shows the error icon, the reason in the error colour, the time of the last attempt ("Last tried 21 Nov 2026, 10:02", from `auto_backup_last_failure`), and the fix as its action. Selecting the row opens the fix; the switch row keeps its own behaviour.
 
 **Values:**
 
@@ -687,7 +732,10 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | exported | "Configuration exported" | none |
 | restored from export file | "Configuration restored" | none |
 | failed, known reason | "Export failed: no storage access" (and the other R30 reasons) | the R30 action |
-| failed, other reason | "Export failed" | "Open log" |
+| export failed, other reason | "Export failed" | "Open log" |
+| restore from export file failed, known reason | "Restore failed: no storage access" (and the other R30 reasons) | the R30 action |
+| restore failed, wrong password | "Restore failed: wrong password" | none; the password field stays open |
+| restore failed, other reason | "Restore failed. Nothing changed." | "Open log" |
 
 **Evidence:** Today a success closes all of Settings and a failure opens the log after a toast with a menu path (`SettingsImportExportScreen.kt:237`, `:313`, `:239-245`; `SettingsActivity.kt:72-74`), confirmed 2026-11-25.
 
@@ -709,6 +757,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | explanation | "Encrypts the device key in every export and backup. You need it to restore. Older backups keep the password they were made with." |
 | buttons | "Cancel", "Save" |
 | when a password is set | a "Remove password" text button, with "Automatic backup turns off without a password." above it |
+| when opened by the switch with no password set | title "Set a backup password", with "Automatic backup needs a password." before the explanation; "Save" turns the switch on |
 
 **Evidence:** Owner approval, 2026-11-25. Today the field is plain text (`SettingsImportExportScreen.kt:167-200`).
 
@@ -796,8 +845,10 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | Level | Covers | Rules | Runs |
 |---|---|---|---|
 | Unit (Robolectric) | palette ratios, wallpaper scheme levels, state words, reason lengths, summaries, density heights | R04 R05 R09 R20 R21 R29 | every commit, in CI's `testDebugUnitTest` |
-| Resource checks in CI | no emoji, no ALL CAPS, no banned terms, no text-size literals, no colour literals | R07 R10 R11 R17 R18 | every commit |
-| Owner's phones (`.debug` build beside the release) | top bars, Settings order, help screens, Status, notification, widget, shortcuts, tile, backup screen, restore | R13 R15 R22 R23 R24 R25 R26 R27 R28 R30 R31 R32 R34 | once per plan before merge |
+| Resource checks in CI | no emoji, no ALL CAPS, no banned terms, no text-size literals, no colour literals, upstream resource files unchanged | R07 R10 R11 R17 R18 R41 | every commit |
+| Owner's phones (`.debug` build beside the release) | top bars, Settings order, help screens, Status, notification, widget, shortcuts, tile, live state line, backup screen, restore | R13 R15 R22 R23 R24 R25 R26 R27 R28 R30 R31 R32 R34 R43 | once per plan before merge |
+
+**Evidence:** Not checked: how code cites this spec. speccheck reads `SPEC:Rnn` without a spec name, and R01 to R13 of the backup and run-conditions specs are already cited that way in `app/src/test`, so `speccheck --base` reports their citations against this spec's R01 to R22 too (7 false BLOCKs on 2026-11-25).
 
 **Acceptance:** CI's Build / Build Debug check passes on each plan's pull request, and the phone runs are logged in the plan's progress section.
 
@@ -815,14 +866,16 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 - R08 · Shape: No component overrides its Material 3 shape outside the theme.
 - R09 · Density: A Compose test measures a one-line and a two-line settings row in each density and finds the heights in the table within 1 dp.
 - R10 · One token set for both stacks: `dk audit` over `app/src/main` reports no colour literal outside the theme files.
-- R11 · Icons: A CI check finds no emoji code point in `res/values*/strings.xml`.
+- R11 · Icons: A CI check finds no emoji code point in the fork-owned string files (R41), and no screen uses an upstream string that holds one.
 - R12 · Main navigation: On a phone the bar shows three items with Status selected at launch; on TV the rail does, and every item is reachable by D-pad.
 - R13 · Top bars: Every screen's bar matches its row; the XML `widget_toolbar` and its hidden status views are gone.
 - R14 · Dialogs: No new dialog activity is added; every confirm button in `strings.xml` is a verb that names its action.
 - R15 · Settings root order: The root shows the eight entries in this order, each with a summary.
 - R16 · Per-folder and per-device run conditions: Opening it from a folder named "Photos" shows "Run conditions: Photos", with items in the app-wide order.
-- R17 · Wording style: A CI check flags strings in ALL CAPS, strings with emoji, and strings containing "Click", "Tap" or "Go to Settings".
-- R18 · Terms: A CI check finds none of the Not column in `res/values/strings.xml`.
+- R42 · Screen-by-screen allocation: Each implementation plan cites the rules written for its screens, and no row above is still open when its screen is built.
+- R41 · Fork-owned strings and themes: The implementation plans' diffs leave `res/values*/strings.xml` and the upstream themes files unchanged, except for removals upstream also made.
+- R17 · Wording style: A CI check flags, in the fork-owned string files (R41), strings in ALL CAPS, strings with emoji, and strings containing "Click", "Tap" or "Go to Settings".
+- R18 · Terms: A CI check finds none of the Not column in the fork-owned string files (R41).
 - R19 · Paths and long values: At 320 dp and 200% text, the backup screen's paths wrap only at "/" or spaces.
 - R20 · Run-state words: A unit test maps each run state to its word, and the notification, tile and widget code take the word from that one mapping.
 - R21 · Reasons: A unit test finds every short form at 48 characters or fewer, and the run decision for each case returns its row's words.
@@ -832,6 +885,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 - R25 · State button: From each state, one tap on the widget, the tile or Status reaches the result in the table, and one more tap on "Follow rules" returns control to the run conditions.
 - R26 · Home-screen widget: On the owner's phone (`.debug` build beside the release), the widget shows each R20 state as the table says, the button does R25's action, and turning Wi-Fi off shows "Paused" with "No Wi-Fi" within the stop delay plus 2 s.
 - R27 · Launcher shortcuts: On the owner's phone the long press shows four shortcuts, and each does its action without opening another screen first, except Show device ID and Add device.
+- R43 · Live state on the Run conditions screen: With Syncthing running on mobile data, turning "Run on mobile data" off changes the card to "Paused by your rules · On mobile data" within the stop delay (run-conditions R09) plus 2 s.
 - R28 · Backup screen layout: The screen shows the rows in this order with these words; a TalkBack walk reads each row's title and summary.
 - R29 · Automatic backup status: A unit test of the summary builder returns each row's text for its state.
 - R30 · Backup failure row: With each failure recorded, the row shows its title and action, and selecting it opens the listed target; selecting the switch row still toggles the switch.

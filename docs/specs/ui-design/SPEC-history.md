@@ -50,3 +50,17 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-25 · R23 · kind · Q → D, default accepted · owner
 - 2026-11-25 · R24 · kind · Q → D, default accepted · owner
 - 2026-11-25 · R38 · changed · test plan covers R13 R15 R21 to R24 · owner
+- 2026-11-25 · R04 · changed · Material Color Utilities source not checked · builder
+- 2026-11-25 · R10 · changed · XML theme in a fork-owned file · owner
+- 2026-11-25 · R41 · added · fork-owned strings and themes, upstream files unchanged · owner
+- 2026-11-25 · R11 · changed · emoji check on fork-owned strings · owner
+- 2026-11-25 · R17 · changed · wording check on fork-owned strings · owner
+- 2026-11-25 · R18 · changed · term check on fork-owned strings · owner
+- 2026-11-25 · R42 · added · screen-by-screen allocation with the design skills · owner
+- 2026-11-25 · R43 · added · live state line on the Run conditions screens · owner
+- 2026-11-25 · R30 · changed · last attempt time, not first failure · builder
+- 2026-11-25 · R32 · changed · restore-from-export-file failures · builder
+- 2026-11-25 · R33 · changed · dialog opened by the switch with no password · builder
+- 2026-11-25 · R01 · changed · override frequency confirmed · owner
+- 2026-11-25 · R38 · changed · test plan covers R41 and R43 · owner
+- 2026-11-25 · R38 · changed · note on spec-blind code citations · builder
