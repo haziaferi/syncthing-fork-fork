@@ -25,6 +25,10 @@ unchanged, so upstream syncs stay clean.
   resolves to the `upstream` remote, so always pass `-R haziaferi/syncthing-fork-fork`.
 - Commits follow `CONTRIBUTING.md`: conventional commits in lower case, an optional scope,
   and a `Signed-off-by` line (DCO).
+- The specs live in `docs/specs/<name>/`, and their rule numbers overlap, so code and
+  tests cite a rule with its spec's folder name: `SPEC:run-conditions:R09`, or
+  `SPEC_run_conditions_R09` in an identifier. An unnamed `SPEC:R09` cannot say which spec
+  it means, so speccheck asks about it instead of blocking.
 - The owner approves each merge. Once every check is green, merge with
   `gh pr merge <n> -R haziaferi/syncthing-fork-fork --<method> --match-head-commit <sha> --delete-branch`.
   The repository does not delete merged branches by itself.

@@ -8,7 +8,7 @@ public class StopDelayTest {
 
     private final StopDelay delay = new StopDelay();
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void shortDrop_staysMet() {
         assertThat(delay.effective("", true, 0)).isTrue();
@@ -18,7 +18,7 @@ public class StopDelayTest {
         assertThat(delay.nextCheckAt(6_000)).isEqualTo(-1L);
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void longDrop_stopsAfterTenSeconds() {
         assertThat(delay.effective("", true, 0)).isTrue();
@@ -30,14 +30,14 @@ public class StopDelayTest {
         assertThat(delay.effective("", false, 30_000)).isFalse();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void firstResultUnmet_noHold() {
         assertThat(delay.effective("folder:a", false, 0)).isFalse();
         assertThat(delay.nextCheckAt(0)).isEqualTo(-1L);
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void twoDrops_countFromFirst() {
         delay.effective("", true, 0);
@@ -48,7 +48,7 @@ public class StopDelayTest {
         assertThat(delay.effective("", false, 13_000)).isFalse();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void keysIndependent() {
         delay.effective("folder:a", true, 0);
@@ -66,7 +66,7 @@ public class StopDelayTest {
         assertThat(delay.effective("", false, 2_000)).isFalse();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void clearExcept_keepsOnlyThatKey() {
         delay.effective("", true, 0);
@@ -78,7 +78,7 @@ public class StopDelayTest {
         assertThat(delay.nextCheckAt(2_000)).isEqualTo(11_000L);
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void expiredHoldNotChecked_notReportedAgain() {
         // A folder held when Syncthing stops is not checked again; its end must not stay "due".

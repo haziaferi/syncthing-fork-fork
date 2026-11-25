@@ -392,7 +392,7 @@ public class ConfigImporterTest {
         assertThat(prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null)).isEqualTo("current/config.zip");
     }
 
-    // SPEC:R16
+    // SPEC:auto-config-backup:R16
     @Test
     public void commit_keepsDeviceBackupStatus() throws Exception {
         writeLiveSet(filesDir, "live", VALID_CONFIG);

@@ -838,7 +838,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 ### D-R38 · Test plan
 
-**Rule:** Each implementation plan carries the levels below for the rules it builds.
+**Rule:** Each implementation plan carries the levels below for the rules it builds. Tests and code cite this spec's rules as `SPEC:ui-design:Rnn`, or `SPEC_ui_design_Rnn` in an identifier.
 
 **Values:**
 
@@ -848,7 +848,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | Resource checks in CI | no emoji, no ALL CAPS, no banned terms, no text-size literals, no colour literals, upstream resource files unchanged | R07 R10 R11 R17 R18 R41 | every commit |
 | Owner's phones (`.debug` build beside the release) | top bars, Settings order, help screens, Status, notification, widget, shortcuts, tile, live state line, backup screen, restore | R13 R15 R22 R23 R24 R25 R26 R27 R28 R30 R31 R32 R34 R43 | once per plan before merge |
 
-**Evidence:** Not checked: how code cites this spec. speccheck reads `SPEC:Rnn` without a spec name, and R01 to R13 of the backup and run-conditions specs are already cited that way in `app/src/test`, so `speccheck --base` reports their citations against this spec's R01 to R22 too (7 false BLOCKs on 2026-11-25).
+**Evidence:** speccheck 1.22.0 (dev-engineering-suite, merged 2026-11-25) reads the named form and blocks a change only for the spec a citation names; the backup and run-conditions tests use it since 2026-11-25.
 
 **Acceptance:** CI's Build / Build Debug check passes on each plan's pull request, and the phone runs are logged in the plan's progress section.
 

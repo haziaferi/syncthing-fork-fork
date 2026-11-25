@@ -30,13 +30,13 @@ public class AutoBackupPrefsTest {
         prefs.edit().clear().commit();
     }
 
-    // SPEC:R15
+    // SPEC:auto-config-backup:R15
     @Test
     public void isEnabled_freshPrefs_isFalse() {
         assertThat(AutoBackupPrefs.isEnabled(prefs)).isFalse();
     }
 
-    // SPEC:R05
+    // SPEC:auto-config-backup:R05
     @Test
     public void setEnabled_withoutPassword_isRefused() {
         assertThat(AutoBackupPrefs.setEnabled(prefs, true)).isFalse();
@@ -47,7 +47,7 @@ public class AutoBackupPrefsTest {
         assertThat(AutoBackupPrefs.isEnabled(prefs)).isTrue();
     }
 
-    // SPEC:R22
+    // SPEC:auto-config-backup:R22
     @Test
     public void isRuntimeKey_coversEveryRuntimeKey() {
         String[] runtime = {
@@ -79,7 +79,7 @@ public class AutoBackupPrefsTest {
         assertThat(AutoBackupPrefs.isRuntimeKey(null)).isFalse();
     }
 
-    // SPEC:R09
+    // SPEC:auto-config-backup:R09
     @Test
     public void backupFolder_defaultAndChanged() {
         File root = new File("root");

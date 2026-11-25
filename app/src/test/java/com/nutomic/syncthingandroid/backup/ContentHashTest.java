@@ -78,7 +78,7 @@ public class ContentHashTest {
             AutoBackupPrefs.KEY_LAST_HASH,
     };
 
-    // SPEC:R22
+    // SPEC:auto-config-backup:R22
     @Test
     public void of_runtimeKeyChange_sameHash() throws Exception {
         String hash = ContentHash.of(files, prefs());

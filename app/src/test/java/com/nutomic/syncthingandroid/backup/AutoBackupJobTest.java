@@ -81,7 +81,7 @@ public class AutoBackupJobTest {
         jobs.cancelAll();
     }
 
-    // SPEC:R14
+    // SPEC:auto-config-backup:R14
     @Test
     public void pendingRollback_writesNothingAndReschedules() throws Exception {
         write(new File(new File(context.getFilesDir(), ConfigImporter.ROLLBACK_DIR), ConfigImporter.COMMIT_MARKER), "");
@@ -144,7 +144,7 @@ public class AutoBackupJobTest {
         assertThat(BackupFolder.list(backupFolder)).hasSize(1);
     }
 
-    // SPEC:R14
+    // SPEC:auto-config-backup:R14
     @Test
     public void importStartingMidRun_keepsNothingAndReschedules() {
         long pendingSince = T0 - 5 * 60 * 1000L;
