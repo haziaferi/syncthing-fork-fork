@@ -362,7 +362,7 @@ public class RunConditionEvaluatorTest {
         return device().wifiConnected(true).wifiValidated(false).wifiInfoAvailable(true).wifiSsid("\"Lan\"");
     }
 
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void validatedWifi_runsUnderWifiOnly() {
         Decision d = decide(device().transport(Transport.MOBILE).mobileConnected(true)
@@ -371,7 +371,7 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).contains(Reason.ON_WIFI);
     }
 
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void unvalidatedWifi_mobileAllowed_runs() {
         prefs.edit().putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true).commit();
@@ -381,7 +381,7 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).contains(Reason.ON_WIFI);
     }
 
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void unvalidatedWifi_roamingDisallowed_doesNotRun() {
         // Abroad: captive Wi-Fi plus roaming mobile data, which carries the traffic.
@@ -399,7 +399,7 @@ public class RunConditionEvaluatorTest {
         assertThat(RunConditionEvaluator.checkObjectConditions(prefs, onWifiRoute, obj)).isFalse();
     }
 
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void unvalidatedWifi_noMobileNetwork_runs() {
         Decision d = decide(unvalidatedWifi().transport(Transport.WIFI).build());
@@ -407,8 +407,8 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).contains(Reason.ON_WIFI);
     }
 
-    // SPEC:R07
-    // SPEC:R10
+    // SPEC:run-conditions:R07
+    // SPEC:run-conditions:R10
     @Test
     public void unvalidatedWifi_mobileOnButDisallowed_doesNotRun() {
         Decision d = decide(unvalidatedWifi().transport(Transport.MOBILE).mobileConnected(true).build());
@@ -416,7 +416,7 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.WIFI_WITHOUT_INTERNET).inOrder();
     }
 
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void ethernet_countsAsUnmeteredWifi() {
         Decision d = decide(device().transport(Transport.ETHERNET).ethernetConnected(true)
@@ -425,7 +425,7 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).contains(Reason.ON_NONMETERED_WIFI);
     }
 
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void mobileDefault_countsAsMobile() {
         prefs.edit()
@@ -441,7 +441,7 @@ public class RunConditionEvaluatorTest {
         assertThat(onWifi.shouldRun).isFalse();
     }
 
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void objectConditions_unvalidatedWifi_followObjectMobilePref() {
         String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "abc";
@@ -456,7 +456,7 @@ public class RunConditionEvaluatorTest {
         assertThat(decide(d).reasons).contains(Reason.WIFI_WITHOUT_INTERNET);
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     public void unmeteredWifi_meteredDefault_runsUnderUnmeteredOnly() {
         // A VPN or mobile data carries traffic and is metered; the Wi-Fi itself is not.
@@ -466,7 +466,7 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).contains(Reason.ON_NONMETERED_WIFI);
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     public void meteredWifi_doesNotRun() {
         Decision d = decide(device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true)
@@ -475,7 +475,7 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).contains(Reason.NOT_NONMETERED_WIFI);
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     public void whitelistedSsid_runs() {
         prefs.edit()
@@ -487,7 +487,7 @@ public class RunConditionEvaluatorTest {
         assertThat(d.shouldRun).isTrue();
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     public void hiddenSsid_givesLocationReason() {
         prefs.edit().putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true).commit();
@@ -499,7 +499,7 @@ public class RunConditionEvaluatorTest {
     }
 
     /** R07's table, row by row, for a folder's own conditions. */
-    // SPEC:R07
+    // SPEC:run-conditions:R07
     @Test
     public void objectConditions_followEachR07Row() {
         String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "rows";

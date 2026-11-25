@@ -149,7 +149,7 @@ public class AutoBackupWriterTest {
         }
     }
 
-    // SPEC:R03
+    // SPEC:auto-config-backup:R03
     @Test
     public void run_archiveHoldsExactlyTheIncludedFiles() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -171,7 +171,7 @@ public class AutoBackupWriterTest {
         assertThat(entries(BackupFolder.list(defaultFolder).get(0))).doesNotContain(Constants.HTTPS_CERT_FILE);
     }
 
-    // SPEC:R04
+    // SPEC:auto-config-backup:R04
     @Test
     public void run_backupStagesThroughImport() throws Exception {
         prefs.edit().putString(AutoBackupPrefs.KEY_LAST_HASH, "old").commit();
@@ -187,7 +187,7 @@ public class AutoBackupWriterTest {
         }
     }
 
-    // SPEC:R05
+    // SPEC:auto-config-backup:R05
     @Test
     public void run_backupNeedsThePassword() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -205,7 +205,7 @@ public class AutoBackupWriterTest {
                 tmp.newFolder("scratch"))).isEqualTo(ConfigArchive.Check.OK);
     }
 
-    // SPEC:R09
+    // SPEC:auto-config-backup:R09
     @Test
     public void run_writesIntoConfiguredFolder() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -217,7 +217,7 @@ public class AutoBackupWriterTest {
         assertThat(BackupFolder.list(defaultFolder)).hasSize(1);
     }
 
-    // SPEC:R10
+    // SPEC:auto-config-backup:R10
     @Test
     public void run_truncatedArchive_keepsExistingBackups() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -231,7 +231,7 @@ public class AutoBackupWriterTest {
         assertNoTmp(defaultFolder);
     }
 
-    // SPEC:R10
+    // SPEC:auto-config-backup:R10
     @Test
     public void run_malformedConfig_keepsExistingBackups() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -245,7 +245,7 @@ public class AutoBackupWriterTest {
         assertNoTmp(defaultFolder);
     }
 
-    // SPEC:R11
+    // SPEC:auto-config-backup:R11
     @Test
     public void run_withSixBackups_leavesFiveAndOwnFilesOnly() throws Exception {
         assertThat(defaultFolder.mkdirs()).isTrue();
@@ -270,7 +270,7 @@ public class AutoBackupWriterTest {
         assertThat(Files.readAllBytes(manual.toPath())).isEqualTo("manual".getBytes(StandardCharsets.UTF_8));
     }
 
-    // SPEC:R12
+    // SPEC:auto-config-backup:R12
     @Test
     public void run_wallClockSetBackAnHour_newBackupIsNewestAndKept() throws Exception {
         for (int i = 0; i < BackupFolder.KEEP; i++) {
@@ -293,7 +293,7 @@ public class AutoBackupWriterTest {
         assertThat(writer(REAL).run()).isEqualTo(AutoBackupWriter.Outcome.SKIPPED_UNCHANGED);
     }
 
-    // SPEC:R13
+    // SPEC:auto-config-backup:R13
     @Test
     public void run_unchangedContent_writesNothing() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -310,7 +310,7 @@ public class AutoBackupWriterTest {
         assertThat(BackupFolder.list(defaultFolder)).hasSize(1);
     }
 
-    // SPEC:R13
+    // SPEC:auto-config-backup:R13
     @Test
     public void run_failureRows_recordReasonAndKeepBackups() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -341,7 +341,7 @@ public class AutoBackupWriterTest {
         assertSameContents(before, defaultFolder);
     }
 
-    // SPEC:R14
+    // SPEC:auto-config-backup:R14
     @Test
     public void run_manualOperationDuringRun_keepsNothingAndRecordsNothing() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);
@@ -359,7 +359,7 @@ public class AutoBackupWriterTest {
         assertThat(prefs.getString(AutoBackupPrefs.KEY_LAST_HASH, null)).isEqualTo(hashBefore);
     }
 
-    // SPEC:R19
+    // SPEC:auto-config-backup:R19
     @Test
     public void run_emptyPassword_turnsFeatureOff() {
         prefs.edit().putString(Constants.PREF_BACKUP_PASSWORD, "").commit();
@@ -371,7 +371,7 @@ public class AutoBackupWriterTest {
         assertThat(BackupFolder.list(defaultFolder)).isEmpty();
     }
 
-    // SPEC:R19
+    // SPEC:auto-config-backup:R19
     @Test
     public void run_changedPassword_newBackupUsesNewPassword() throws Exception {
         assertThat(run(REAL)).isEqualTo(AutoBackupWriter.Outcome.WRITTEN);

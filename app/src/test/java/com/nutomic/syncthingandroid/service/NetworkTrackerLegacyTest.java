@@ -70,7 +70,7 @@ public class NetworkTrackerLegacyTest {
         return info;
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     @Config(sdk = 24)
     @SuppressWarnings("deprecation")
@@ -83,7 +83,7 @@ public class NetworkTrackerLegacyTest {
         assertThat(tracker.snapshot().get(0).roaming).isTrue();
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     @SuppressWarnings("deprecation")
     public void wifiNameBelowApi31_readsWifiManager() {
@@ -101,7 +101,7 @@ public class NetworkTrackerLegacyTest {
         assertThat(snapshot.get(0).wifiSsid).isEqualTo("\"Home\"");
     }
 
-    // SPEC:R03
+    // SPEC:run-conditions:R03
     @Test
     @Config(sdk = 24)
     public void onAvailableAlone_notifiesAndSnapshotReadsNetwork() {

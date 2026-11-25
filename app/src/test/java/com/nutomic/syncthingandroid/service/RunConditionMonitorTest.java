@@ -116,7 +116,7 @@ public class RunConditionMonitorTest {
         prefs.edit().putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP).commit();
     }
 
-    // SPEC:R03
+    // SPEC:run-conditions:R03
     @Test
     public void wifiAppears_decisionTurnsTrue() {
         assertThat(decisions).isEmpty();
@@ -124,7 +124,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true);
     }
 
-    // SPEC:R03
+    // SPEC:run-conditions:R03
     @Test
     public void shutdown_unregistersCallback() {
         wifiUp();
@@ -135,7 +135,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true);
     }
 
-    // SPEC:R04
+    // SPEC:run-conditions:R04
     @Test
     public void recheck_after15Minutes() {
         wifiUp();
@@ -146,7 +146,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true, false).inOrder();
     }
 
-    // SPEC:R04
+    // SPEC:run-conditions:R04
     @Test
     public void screenOn_rechecks() {
         wifiUp();
@@ -156,7 +156,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true, false).inOrder();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void wifiDrop5s_keepsRunning() {
         wifiUp();
@@ -167,7 +167,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true);
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void wifiDrop11s_stops() {
         wifiUp();
@@ -178,7 +178,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true, false).inOrder();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void forceStop_actsAtOnce() {
         wifiUp();
@@ -187,7 +187,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true, false).inOrder();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void objectConditions_heldDuringShortDrop() {
         String folder = Constants.PREF_OBJECT_PREFIX_FOLDER + "abc";
@@ -199,7 +199,7 @@ public class RunConditionMonitorTest {
         assertThat(monitor.checkObjectSyncConditions(folder)).isFalse();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void objectHold_notCarriedOverAStop() {
         // App runs on Wi-Fi or mobile data; the folder on Wi-Fi only.
@@ -219,7 +219,7 @@ public class RunConditionMonitorTest {
         assertThat(monitor.checkObjectSyncConditions(folder)).isFalse();
     }
 
-    // SPEC:R09
+    // SPEC:run-conditions:R09
     @Test
     public void timeWindowEnd_stopsAtOnce() {
         wifiUp();
@@ -234,7 +234,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true, false).inOrder();
     }
 
-    // SPEC:R05
+    // SPEC:run-conditions:R05
     @Test
     @SuppressWarnings("deprecation")
     public void vpnOverWifi_decidesOnTheWifi() {
@@ -254,7 +254,7 @@ public class RunConditionMonitorTest {
         assertThat(decisions).containsExactly(true, false).inOrder();
     }
 
-    // SPEC:R04
+    // SPEC:run-conditions:R04
     @Test
     public void screenOn_catchesMissedWifiLoss() {
         wifiUp();

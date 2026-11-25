@@ -46,13 +46,13 @@ public class BackupFolderTest {
         return file;
     }
 
-    // SPEC:R12
+    // SPEC:auto-config-backup:R12
     @Test
     public void stamp_fixedClock() {
         assertThat(BackupFolder.stamp(1763900000000L)).isEqualTo("20251123T121320Z");
     }
 
-    // SPEC:R12
+    // SPEC:auto-config-backup:R12
     @Test
     public void nextFile_sameSecond_getsSuffixAndOrdersAfter() throws Exception {
         File first = create(BackupFolder.nextFile(folder, SUMMER));
@@ -63,7 +63,7 @@ public class BackupFolderTest {
         assertThat(BackupFolder.list(folder)).containsExactly(second, first).inOrder();
     }
 
-    // SPEC:R12
+    // SPEC:auto-config-backup:R12
     @Test
     public void list_localClockBackAnHour_newestStillFirst() throws Exception {
         TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"));
@@ -81,7 +81,7 @@ public class BackupFolderTest {
         assertThat(BackupFolder.list(folder)).hasSize(BackupFolder.KEEP);
     }
 
-    // SPEC:R12
+    // SPEC:auto-config-backup:R12
     @Test
     public void nameTime_clockBehindNewestBackup_usesNewestStamp() throws Exception {
         assertThat(BackupFolder.nameTime(folder, SUMMER)).isEqualTo(SUMMER);
@@ -95,7 +95,7 @@ public class BackupFolderTest {
         assertThat(BackupFolder.nameTime(folder, SUMMER + HOUR)).isEqualTo(SUMMER + HOUR);
     }
 
-    // SPEC:R11
+    // SPEC:auto-config-backup:R11
     @Test
     public void prune_keepsNewestFive_andOnlyItsOwnFiles() throws Exception {
         long now = SUMMER + 10 * HOUR;

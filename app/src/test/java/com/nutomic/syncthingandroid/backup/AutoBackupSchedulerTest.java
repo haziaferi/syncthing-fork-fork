@@ -62,7 +62,7 @@ public class AutoBackupSchedulerTest {
         AutoBackupScheduler.onPreferenceChanged(context, prefs, Constants.PREF_RUN_ON_WIFI, clock);
     }
 
-    // SPEC:R13
+    // SPEC:auto-config-backup:R13
     @Test
     public void threeChangesWithinTenMinutes_scheduleOneJob() {
         changeAt(0);
@@ -75,7 +75,7 @@ public class AutoBackupSchedulerTest {
         assertThat(job.isPersisted()).isTrue();
     }
 
-    // SPEC:R13
+    // SPEC:auto-config-backup:R13
     @Test
     public void changeEveryFiveMinutes_runsWithinSixtyMinutes() {
         for (long minutes = 0; minutes <= 55; minutes += 5) {
@@ -96,7 +96,7 @@ public class AutoBackupSchedulerTest {
         assertThat(AutoBackupScheduler.delayMillis(T0 + 90 * MINUTE, T0)).isEqualTo(0L);
     }
 
-    // SPEC:R15
+    // SPEC:auto-config-backup:R15
     @Test
     public void featureOff_changeSchedulesNothing() {
         AutoBackupPrefs.setEnabled(prefs, false);
@@ -109,7 +109,7 @@ public class AutoBackupSchedulerTest {
         assertThat(pendingBackup(jobs)).isNotNull();
     }
 
-    // SPEC:R22
+    // SPEC:auto-config-backup:R22
     @Test
     public void runtimeKeyChange_schedulesNothing() {
         String[] runtime = {
@@ -143,7 +143,7 @@ public class AutoBackupSchedulerTest {
         assertThat(pendingBackup(jobs)).isNotNull();
     }
 
-    // SPEC:R19
+    // SPEC:auto-config-backup:R19
     @Test
     public void passwordCleared_turnsFeatureOff() {
         changeAt(0);

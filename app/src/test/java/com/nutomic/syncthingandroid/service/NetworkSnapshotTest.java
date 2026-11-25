@@ -48,7 +48,7 @@ public class NetworkSnapshotTest {
         assertThat(d.ethernetConnected).isFalse();
     }
 
-    // SPEC:R05
+    // SPEC:run-conditions:R05
     @Test
     public void fill_vpnDefaultOverWifi_usesWifi() {
         DeviceConditions d = fill(wifi(false, true, false, "\"Home\""));
@@ -79,7 +79,7 @@ public class NetworkSnapshotTest {
         assertThat(d.mobileConnected).isTrue();
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     public void fill_metersAndRoamingFromOwnNetwork() {
         DeviceConditions d = fill(wifi(false, true, false, "a"), mobile(true, true, true));

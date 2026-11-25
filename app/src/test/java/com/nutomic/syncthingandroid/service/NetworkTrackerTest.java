@@ -71,7 +71,7 @@ public class NetworkTrackerTest {
         return callbacks.iterator().next();
     }
 
-    // SPEC:R05
+    // SPEC:run-conditions:R05
     @Test
     public void kindOf_mapsTransports() {
         assertThat(NetworkTracker.kindOf(caps(NetworkCapabilities.TRANSPORT_WIFI))).isEqualTo(Transport.WIFI);
@@ -81,7 +81,7 @@ public class NetworkTrackerTest {
         assertThat(NetworkTracker.kindOf(caps(NetworkCapabilities.TRANSPORT_LOWPAN))).isEqualTo(Transport.OTHER);
     }
 
-    // SPEC:R03
+    // SPEC:run-conditions:R03
     @Test
     public void start_registersOneCallback_stopUnregisters() {
         tracker.start();
@@ -91,7 +91,7 @@ public class NetworkTrackerTest {
         tracker.stop();
     }
 
-    // SPEC:R05
+    // SPEC:run-conditions:R05
     @Test
     public void snapshot_readsConnectedNetworks_skipsVpn() {
         connected(ShadowNetwork.newInstance(7), ConnectivityManager.TYPE_WIFI,
@@ -105,7 +105,7 @@ public class NetworkTrackerTest {
         assertThat(notified).isEqualTo(0);
     }
 
-    // SPEC:R03
+    // SPEC:run-conditions:R03
     @Test
     public void capabilitiesChanged_notifies_snapshotReadsNetwork() {
         tracker.start();
@@ -145,7 +145,7 @@ public class NetworkTrackerTest {
         assertThat(notified).isEqualTo(2);
     }
 
-    // SPEC:R03
+    // SPEC:run-conditions:R03
     @Test
     public void lostBeforeAndroidDropsIt_snapshotSkipsIt() {
         // Seen on a OnePlus LE2123 (Android 14): onLost arrives while getAllNetworks() still
@@ -159,7 +159,7 @@ public class NetworkTrackerTest {
         assertThat(tracker.snapshot()).isEmpty();
     }
 
-    // SPEC:R04
+    // SPEC:run-conditions:R04
     @Test
     public void snapshot_dropsNetworkAfterMissedLost() {
         tracker.start();
@@ -172,7 +172,7 @@ public class NetworkTrackerTest {
         assertThat(tracker.snapshot()).isEmpty();
     }
 
-    // SPEC:R08
+    // SPEC:run-conditions:R08
     @Test
     public void snapshot_takesMeteredFromAndroidNow() {
         tracker.start();
