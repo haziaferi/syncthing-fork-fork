@@ -15,7 +15,7 @@ Kinds: O owner rule · D decided · I inherited · A assumed · Q open.
 | D-R03 | Network callbacks | 2. Detecting changes |
 | D-R04 | Re-check without a callback | 2. Detecting changes |
 | D-R05 | Network snapshot | 3. Reading the network |
-| A-R06 | Physical networks stay visible under a VPN | 3. Reading the network |
+| D-R06 | Physical networks stay visible under a VPN | 3. Reading the network |
 | D-R07 | Which network counts | 3. Reading the network |
 | D-R08 | Metered, roaming and Wi-Fi name | 3. Reading the network |
 | D-R09 | Stop delay | 4. Acting on the decision |
@@ -121,15 +121,15 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 
 **Since:** 2026-11-24 · owner · agreed rewording
 
-### A-R06 · Physical networks stay visible under a VPN
+### D-R06 · Physical networks stay visible under a VPN
 
-**Rule:** With a VPN active, the callback still reports the physical networks beneath it with their own transports and capabilities, on every Android version from 23.
+**Rule:** With a VPN active, Android still reports the physical networks beneath it with their own transports and capabilities, so the snapshot holds them. The VPN's own network carries `TRANSPORT_VPN`, often together with the transport it runs over, and is left out by that flag.
 
-**Evidence:** Not checked: to be confirmed in the device run (R13) on API 32, API 36 and the owner's phone.
+**Evidence:** OnePlus A6013, Android 11 (API 30), Tor VPN over Wi-Fi, 2026-11-25: the default network was the VPN (`WIFI|VPN`). The snapshot held the Wi-Fi, validated and unmetered, and Syncthing kept running under "Wi-Fi only". Wi-Fi off stopped it after 10.7 s, and Wi-Fi on restarted it after 4.8 s, with the VPN still up (`build-logs/rc-device-8ad59cbb/t6`–`t8`). Not checked: API 23–29 and 31+ with a VPN.
 
 **Acceptance:** In the device run, a VPN over Wi-Fi leaves the Wi-Fi network in the snapshot with its metered state.
 
-**Since:** 2026-11-24 · builder · own words
+**Since:** 2026-11-25 · builder · own words
 
 ### D-R07 · Which network counts
 
