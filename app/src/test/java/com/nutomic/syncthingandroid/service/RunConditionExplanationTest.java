@@ -38,7 +38,7 @@ public class RunConditionExplanationTest {
     private static final java.util.Set<String> NEWLINE_BEFORE = new java.util.HashSet<>(Arrays.asList(
             "reason_location_unavailable", "reason_not_nonmetered_wifi",
             "reason_not_nonroaming_mobile_data", "reason_not_on_whitelisted_wifi",
-            "reason_not_on_wifi", "reason_on_flight_mode", "reason_on_metered_nonmetered_wifi",
+            "reason_not_on_wifi", "reason_wifi_without_internet", "reason_on_flight_mode", "reason_on_metered_nonmetered_wifi",
             "reason_on_nonmetered_wifi", "reason_on_nonroaming_mobile_data",
             "reason_on_roaming_nonroaming_mobile_data", "reason_on_whitelisted_wifi",
             "reason_on_wifi", "reason_wifi_disallowed"));

@@ -919,6 +919,7 @@
     <string name="reason_wifi_disallowed">Syncthing is not allowed to run on WiFi or ethernet.</string>
     <string name="reason_on_wifi">Syncthing is allowed to run on WiFi and WiFi is currently connected.</string>
     <string name="reason_not_on_wifi">Syncthing is allowed to run on WiFi but WiFi isn\'t connected or the phone is in flight mode.</string>
+    <string name="reason_wifi_without_internet">Wi-Fi has no internet and mobile data is not allowed.</string>
     <string name="reason_on_metered_nonmetered_wifi">Syncthing is allowed to run on metered and non-metered WiFi connections.</string>
     <string name="reason_on_whitelisted_wifi">Syncthing is allowed to run on the current WiFi network.</string>
     <string name="reason_not_on_whitelisted_wifi">Syncthing is not running as the current WiFi network\'s name is not whitelisted.</string>

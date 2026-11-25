@@ -48,7 +48,8 @@ public class RunConditionEvaluatorTest {
     }
 
     private static DeviceConditions wifi() {
-        return device().transport(Transport.WIFI).wifiInfoAvailable(true).wifiSsid("\"Home\"").build();
+        return device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true)
+                .wifiInfoAvailable(true).wifiSsid("\"Home\"").build();
     }
 
     private Decision decide(DeviceConditions d) {
@@ -117,7 +118,7 @@ public class RunConditionEvaluatorTest {
                 .commit();
         DeviceConditions device = device()
                 .charging(false).powerSaving(true).masterSyncEnabled(false)
-                .transport(Transport.WIFI).build();
+                .transport(Transport.WIFI).wifiConnected(true).wifiValidated(true).build();
 
         assertThat(decide(device).reasons).containsExactly(Reason.FORCE_STOP);
 
@@ -151,7 +152,7 @@ public class RunConditionEvaluatorTest {
     @Test
     public void powerSourceChargerOnly_onBattery_doesNotRun() {
         prefs.edit().putString(Constants.PREF_POWER_SOURCE, Constants.PowerSource.CHARGER).commit();
-        Decision d = decide(device().charging(false).transport(Transport.WIFI).build());
+        Decision d = decide(device().charging(false).transport(Transport.WIFI).wifiConnected(true).wifiValidated(true).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).containsExactly(Reason.NOT_CHARGING);
     }
@@ -166,7 +167,7 @@ public class RunConditionEvaluatorTest {
 
     @Test
     public void respectPowerSaving_inPowerSave_doesNotRun() {
-        Decision d = decide(device().powerSaving(true).transport(Transport.WIFI).build());
+        Decision d = decide(device().powerSaving(true).transport(Transport.WIFI).wifiConnected(true).wifiValidated(true).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).containsExactly(Reason.NOT_WHILE_POWER_SAVING);
     }
@@ -174,7 +175,7 @@ public class RunConditionEvaluatorTest {
     @Test
     public void respectMasterSync_autoSyncOff_doesNotRun() {
         prefs.edit().putBoolean(Constants.PREF_RESPECT_MASTER_SYNC, true).commit();
-        Decision d = decide(device().masterSyncEnabled(false).transport(Transport.WIFI).build());
+        Decision d = decide(device().masterSyncEnabled(false).transport(Transport.WIFI).wifiConnected(true).wifiValidated(true).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).containsExactly(Reason.NOT_WHILE_AUTO_SYNC_DATA_DISABLED);
     }
@@ -217,14 +218,14 @@ public class RunConditionEvaluatorTest {
 
     @Test
     public void wifiAllowed_meteredDisallowed_doesNotRun() {
-        Decision d = decide(device().transport(Transport.WIFI).activeNetworkMetered(true).build());
+        Decision d = decide(device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true).wifiMetered(true).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).contains(Reason.NOT_NONMETERED_WIFI);
     }
 
     @Test
     public void ethernet_reportedMetered_stillRuns() {
-        Decision d = decide(device().transport(Transport.ETHERNET).activeNetworkMetered(true).build());
+        Decision d = decide(device().transport(Transport.ETHERNET).ethernetConnected(true).wifiMetered(true).build());
         assertThat(d.shouldRun).isTrue();
         assertThat(d.reasons).contains(Reason.ON_NONMETERED_WIFI);
     }
@@ -255,7 +256,7 @@ public class RunConditionEvaluatorTest {
     public void whitelistOn_ssidUnknown_reasonLocationUnavailable() {
         prefs.edit().putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true).commit();
         for (String ssid : new String[]{null, "<unknown ssid>"}) {
-            Decision d = decide(device().transport(Transport.WIFI).wifiInfoAvailable(true).wifiSsid(ssid).build());
+            Decision d = decide(device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true).wifiInfoAvailable(true).wifiSsid(ssid).build());
             assertThat(d.shouldRun).isFalse();
             assertThat(d.reasons).contains(Reason.LOCATION_UNAVAILABLE);
         }
@@ -264,7 +265,7 @@ public class RunConditionEvaluatorTest {
     @Test
     public void whitelistOn_wifiInfoMissing_doesNotRun() {
         prefs.edit().putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true).commit();
-        Decision d = decide(device().transport(Transport.WIFI).wifiInfoAvailable(false).build());
+        Decision d = decide(device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true).wifiInfoAvailable(false).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).contains(Reason.NOT_ON_WHITELISTED_WIFI);
     }
@@ -286,7 +287,7 @@ public class RunConditionEvaluatorTest {
     @Test
     public void noConditionMatched_doesNotRun() {
         prefs.edit().putBoolean(Constants.PREF_RUN_ON_WIFI, false).commit();
-        Decision d = decide(device().transport(Transport.DISCONNECTED).build());
+        Decision d = decide(device().transport(Transport.NO_ACTIVE_NETWORK).build());
         assertThat(d.shouldRun).isFalse();
         assertThat(d.reasons).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.WIFI_DISALLOWED).inOrder();
     }
@@ -354,5 +355,181 @@ public class RunConditionEvaluatorTest {
 
         prefs.edit().putBoolean(Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(obj), false).commit();
         assertThat(RunConditionEvaluator.checkObjectConditions(prefs, wifi(), obj)).isFalse();
+    }
+
+    /** A Wi-Fi that Android has not confirmed reaches the internet. */
+    private static DeviceConditions.Builder unvalidatedWifi() {
+        return device().wifiConnected(true).wifiValidated(false).wifiInfoAvailable(true).wifiSsid("\"Lan\"");
+    }
+
+    // SPEC:R07
+    @Test
+    public void validatedWifi_runsUnderWifiOnly() {
+        Decision d = decide(device().transport(Transport.MOBILE).mobileConnected(true)
+                .wifiConnected(true).wifiValidated(true).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_WIFI);
+    }
+
+    // SPEC:R07
+    @Test
+    public void unvalidatedWifi_mobileAllowed_runs() {
+        prefs.edit().putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true).commit();
+        // Mobile data is connected but not the default network, so only the Wi-Fi route can say yes.
+        Decision d = decide(unvalidatedWifi().transport(Transport.WIFI).mobileConnected(true).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_WIFI);
+    }
+
+    // SPEC:R07
+    @Test
+    public void unvalidatedWifi_roamingDisallowed_doesNotRun() {
+        // Abroad: captive Wi-Fi plus roaming mobile data, which carries the traffic.
+        prefs.edit()
+                .putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true)
+                .putBoolean(Constants.PREF_RUN_ON_ROAMING, false)
+                .commit();
+        Decision d = decide(unvalidatedWifi().transport(Transport.MOBILE).mobileConnected(true).roaming(true).build());
+        assertThat(d.shouldRun).isFalse();
+        assertThat(d.reasons).contains(Reason.WIFI_WITHOUT_INTERNET);
+
+        String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "abc";
+        prefs.edit().putBoolean(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(obj), true).commit();
+        DeviceConditions onWifiRoute = unvalidatedWifi().transport(Transport.WIFI).mobileConnected(true).roaming(true).build();
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, onWifiRoute, obj)).isFalse();
+    }
+
+    // SPEC:R07
+    @Test
+    public void unvalidatedWifi_noMobileNetwork_runs() {
+        Decision d = decide(unvalidatedWifi().transport(Transport.WIFI).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_WIFI);
+    }
+
+    // SPEC:R07
+    // SPEC:R10
+    @Test
+    public void unvalidatedWifi_mobileOnButDisallowed_doesNotRun() {
+        Decision d = decide(unvalidatedWifi().transport(Transport.MOBILE).mobileConnected(true).build());
+        assertThat(d.shouldRun).isFalse();
+        assertThat(d.reasons).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.WIFI_WITHOUT_INTERNET).inOrder();
+    }
+
+    // SPEC:R07
+    @Test
+    public void ethernet_countsAsUnmeteredWifi() {
+        Decision d = decide(device().transport(Transport.ETHERNET).ethernetConnected(true)
+                .wifiConnected(true).wifiValidated(true).wifiMetered(true).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_NONMETERED_WIFI);
+    }
+
+    // SPEC:R07
+    @Test
+    public void mobileDefault_countsAsMobile() {
+        prefs.edit()
+                .putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true)
+                .putBoolean(Constants.PREF_RUN_ON_WIFI, false)
+                .commit();
+        Decision d = decide(device().transport(Transport.MOBILE).mobileConnected(true).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_MOBILE_DATA);
+
+        Decision onWifi = decide(device().transport(Transport.WIFI).mobileConnected(true)
+                .wifiConnected(true).wifiValidated(true).build());
+        assertThat(onWifi.shouldRun).isFalse();
+    }
+
+    // SPEC:R07
+    @Test
+    public void objectConditions_unvalidatedWifi_followObjectMobilePref() {
+        String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "abc";
+        prefs.edit()
+                .putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, false)
+                .putBoolean(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(obj), true)
+                .commit();
+        // A roaming-free mobile network that is not the default: the mobile route alone does not decide.
+        DeviceConditions d = unvalidatedWifi().transport(Transport.WIFI).mobileConnected(true).build();
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, d, obj)).isTrue();
+        assertThat(decide(d).shouldRun).isFalse();
+        assertThat(decide(d).reasons).contains(Reason.WIFI_WITHOUT_INTERNET);
+    }
+
+    // SPEC:R08
+    @Test
+    public void unmeteredWifi_meteredDefault_runsUnderUnmeteredOnly() {
+        // A VPN or mobile data carries traffic and is metered; the Wi-Fi itself is not.
+        Decision d = decide(device().transport(Transport.MOBILE).mobileConnected(true)
+                .wifiConnected(true).wifiValidated(true).wifiMetered(false).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_NONMETERED_WIFI);
+    }
+
+    // SPEC:R08
+    @Test
+    public void meteredWifi_doesNotRun() {
+        Decision d = decide(device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true)
+                .wifiMetered(true).build());
+        assertThat(d.shouldRun).isFalse();
+        assertThat(d.reasons).contains(Reason.NOT_NONMETERED_WIFI);
+    }
+
+    // SPEC:R08
+    @Test
+    public void whitelistedSsid_runs() {
+        prefs.edit()
+                .putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true)
+                .putStringSet(Constants.PREF_WIFI_SSID_WHITELIST, new HashSet<>(Collections.singleton("\"Home\"")))
+                .commit();
+        Decision d = decide(device().transport(Transport.MOBILE).mobileConnected(true)
+                .wifiConnected(true).wifiValidated(true).wifiInfoAvailable(true).wifiSsid("\"Home\"").build());
+        assertThat(d.shouldRun).isTrue();
+    }
+
+    // SPEC:R08
+    @Test
+    public void hiddenSsid_givesLocationReason() {
+        prefs.edit().putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true).commit();
+        Decision d = decide(device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true)
+                .wifiInfoAvailable(true).wifiSsid("<unknown ssid>").build());
+        assertThat(d.shouldRun).isFalse();
+        assertThat(d.reasons).contains(Reason.LOCATION_UNAVAILABLE);
+        assertThat(d.reasons).doesNotContain(Reason.NOT_ON_WHITELISTED_WIFI);
+    }
+
+    /** R07's table, row by row, for a folder's own conditions. */
+    // SPEC:R07
+    @Test
+    public void objectConditions_followEachR07Row() {
+        String obj = Constants.PREF_OBJECT_PREFIX_FOLDER + "rows";
+        String objMobile = Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(obj);
+
+        // Row 1: a validated Wi-Fi counts, with mobile data connected and not allowed.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, device().transport(Transport.WIFI)
+                .wifiConnected(true).wifiValidated(true).mobileConnected(true).build(), obj)).isTrue();
+
+        // Row 2: a Wi-Fi without internet counts when no mobile network is connected.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs,
+                unvalidatedWifi().transport(Transport.WIFI).build(), obj)).isTrue();
+
+        // Row 3: it does not count when mobile data is connected and not allowed for the folder.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs,
+                unvalidatedWifi().transport(Transport.MOBILE).mobileConnected(true).build(), obj)).isFalse();
+
+        // Row 4: Ethernet counts as unmetered Wi-Fi, even beside a metered Wi-Fi.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, device().transport(Transport.ETHERNET)
+                .ethernetConnected(true).wifiConnected(true).wifiValidated(true).wifiMetered(true).build(), obj)).isTrue();
+
+        // Row 5: a default mobile network counts as mobile data, so only the folder's mobile setting lets it run.
+        DeviceConditions mobileOnly = device().transport(Transport.MOBILE).mobileConnected(true).build();
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, mobileOnly, obj)).isFalse();
+        prefs.edit().putBoolean(objMobile, true).commit();
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs, mobileOnly, obj)).isTrue();
+        prefs.edit().putBoolean(objMobile, false).commit();
+
+        // Row 6: no physical network; folders have no flight-mode setting of their own.
+        assertThat(RunConditionEvaluator.checkObjectConditions(prefs,
+                device().transport(Transport.NO_ACTIVE_NETWORK).build(), obj)).isFalse();
     }
 }
