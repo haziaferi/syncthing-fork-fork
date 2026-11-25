@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brand colours for the XML screens (light). Values come from BrandScheme.xmlRoles(false);
+     values-night/colors_fork.xml holds the dark ones. -->
+<resources>
+    <color name="fork_primary">#005b86</color>
+    <color name="fork_on_primary">#ffffff</color>
+    <color name="fork_primary_container">#397299</color>
+    <color name="fork_on_primary_container">#ffffff</color>
+    <color name="fork_surface">#f6fafd</color>
+    <color name="fork_on_surface">#0b2230</color>
+    <color name="fork_on_surface_variant">#485861</color>
+    <color name="fork_background">#f6fafd</color>
+    <color name="fork_error">#b00014</color>
+    <color name="fork_on_error">#ffffff</color>
+    <color name="fork_outline">#4d5359</color>
+</resources>

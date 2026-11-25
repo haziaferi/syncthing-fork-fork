@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 theme for the XML screens. Colours map to the brand palette in colors_fork.xml;
+     the DayNight parents switch it to the dark values under values-night. -->
+<resources>
+
+    <style name="Theme.SyncthingFork" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/fork_primary</item>
+        <item name="colorOnPrimary">@color/fork_on_primary</item>
+        <item name="colorPrimaryContainer">@color/fork_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/fork_on_primary_container</item>
+        <item name="colorSurface">@color/fork_surface</item>
+        <item name="colorOnSurface">@color/fork_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/fork_on_surface_variant</item>
+        <item name="colorError">@color/fork_error</item>
+        <item name="colorOnError">@color/fork_on_error</item>
+        <item name="colorOutline">@color/fork_outline</item>
+        <item name="android:colorBackground">@color/fork_background</item>
+        <item name="colorAccent">@color/fork_primary</item>
+
+        <item name="textAppearanceListItemPrimary">@style/TextAppearance.Syncthing.ListItemPrimary</item>
+        <item name="textAppearanceListItemSecondary">@style/TextAppearance.Syncthing.ListItemSecondary</item>
+        <item name="textAppearanceListItemSmall">@style/TextAppearance.Syncthing.ListItemSmall</item>
+
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:listViewStyle">@style/Widget.Syncthing.ListView</item>
+        <item name="android:listDivider">@drawable/list_divider_inset</item>
+        <item name="drawerArrowStyle">@style/Widget.Syncthing.DrawerArrowToggle</item>
+
+        <item name="actionBarSize">@dimen/abc_action_bar_default_height_material</item>
+
+        <item name="spinnerStyle">@style/Widget.AppCompat.Spinner.Underlined</item>
+        <item name="android:spinnerItemStyle">@style/Widget.Syncthing.TextView.SpinnerItem</item>
+        <item name="alertDialogTheme">@style/Theme.SyncthingFork.Dialog</item>
+
+        <item name="android:fitsSystemWindows">true</item>
+    </style>
+
+    <style name="Theme.SyncthingFork.Dialog" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="colorPrimary">@color/fork_primary</item>
+        <item name="colorOnPrimary">@color/fork_on_primary</item>
+        <item name="colorSurface">@color/fork_surface</item>
+        <item name="colorOnSurface">@color/fork_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/fork_on_surface_variant</item>
+        <item name="colorError">@color/fork_error</item>
+        <item name="colorOnError">@color/fork_on_error</item>
+        <item name="colorOutline">@color/fork_outline</item>
+        <item name="colorAccent">@color/fork_primary</item>
+    </style>
+
+    <!-- Defined for the rebuilt screens; the layouts that name ThemeOverlay.Syncthing.Toolbar keep it for now. -->
+    <style name="ThemeOverlay.SyncthingFork.Toolbar" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <item name="android:windowBackground">@null</item>
+        <item name="colorAccent">@android:color/white</item>
+    </style>
+</resources>
