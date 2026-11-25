@@ -64,3 +64,4 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-25 · R01 · changed · override frequency confirmed · owner
 - 2026-11-25 · R38 · changed · test plan covers R41 and R43 · owner
 - 2026-11-25 · R38 · changed · note on spec-blind code citations · builder
+- 2026-11-25 · R38 · changed · citation form SPEC:ui-design:Rnn, speccheck reads it · owner
