@@ -22,6 +22,7 @@ class UiDensityTest {
         assertThat(UiDensity.COMPACT.rowPadding(-3)).isEqualTo(6.dp)
     }
 
+    // SPEC:ui-design:R09
     @Test
     fun heading_matchesTable() {
         assertThat(UiDensity.STANDARD.headingSpaceAbove).isEqualTo(20.dp)

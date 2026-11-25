@@ -25,6 +25,7 @@ class UiPrefsTest {
         assertThat(UiPrefs.density(prefs)).isEqualTo(UiDensity.COMPACT)
     }
 
+    // SPEC:ui-design:R04
     @Test
     fun wallpaper_belowApi31_isOff() {
         prefs.edit().clear().commit()
