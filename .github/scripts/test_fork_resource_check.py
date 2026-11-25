@@ -59,6 +59,27 @@ class StringRuleTest(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertEqual("term" in self.rules(value), flagged)
 
+    def test_cdata_is_checked(self):
+        self.assertIn("wording", self.rules("<![CDATA[Tap here!]]>"))
+
+    def test_unicode_escapes_are_decoded(self):
+        self.assertIn("emoji", self.rules("Done \\u2705"))
+        self.assertIn("emoji", self.rules("Party \\ud83c\\udf89"))
+
+    def test_string_array_does_not_merge_with_next_string(self):
+        path = Path(self.dir) / "strings_fork.xml"
+        path.write_text(
+            '<resources>\n'
+            '<string-array name="a">\n'
+            '  <item>Fine</item>\n'
+            '</string-array>\n'
+            '<string name="b">Tap to fix</string>\n'
+            '</resources>\n',
+            encoding="utf-8",
+        )
+        findings = frc.check_strings(path)
+        self.assertEqual([(f.rule, f.line, f.text) for f in findings], [("wording", 5, "Tap to fix")])
+
     def test_wording_flags_tap_and_menu_paths(self):
         for value in ("Tap to fix", "Go to Settings-Troubleshooting"):
             with self.subTest(value=value):
@@ -70,12 +91,34 @@ class CompareTest(unittest.TestCase):
 
     def test_count_may_shrink_not_grow(self):
         baseline = {self.KEY: 3}
-        self.assertEqual(frc.compare({self.KEY: 2}, baseline), [])
         self.assertEqual(frc.compare({self.KEY: 3}, baseline), [])
+        # a lower count is progress, but the baseline must be lowered with it
+        self.assertEqual(len(frc.compare({self.KEY: 2}, baseline)), 1)
         grown = frc.compare({self.KEY: 4}, baseline)
         self.assertEqual([f.rule for f in grown], ["text-size"])
         new_file = frc.compare({("text-size", "app/src/main/res/layout/new.xml"): 1}, baseline)
-        self.assertEqual(len(new_file), 1)
+        self.assertIn("app/src/main/res/layout/new.xml", [f.path for f in new_file])
+
+
+    def test_count_below_baseline_fails_with_hint(self):
+        found = frc.compare({self.KEY: 2}, {self.KEY: 3})
+        self.assertEqual(len(found), 1)
+        self.assertIn("--write-baseline", found[0].text)
+
+    def test_baseline_entry_for_missing_file_fails(self):
+        found = frc.compare({}, {self.KEY: 3})
+        self.assertEqual([(f.rule, f.path) for f in found], [self.KEY])
+        self.assertIn("--write-baseline", found[0].text)
+
+    def test_sync_branch_skips_count_comparison(self):
+        counts, baseline = {self.KEY: 9}, {self.KEY: 3, ("font-size", "gone.kt"): 1}
+        self.assertEqual(frc.compare(counts, baseline, "sync/upstream-2026-12-01"), [])
+        self.assertNotEqual(frc.compare(counts, baseline, "feat/x"), [])
+
+
+class MainTest(unittest.TestCase):
+    def test_missing_base_ref_exits_2(self):
+        self.assertEqual(frc.main(["--base", "no-such-ref-xyz", "--branch", "feat/x"]), 2)
 
 
 class UpstreamResTest(unittest.TestCase):

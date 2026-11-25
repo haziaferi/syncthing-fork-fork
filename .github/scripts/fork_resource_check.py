@@ -5,7 +5,11 @@ Rules: emoji, all-caps, wording (R17), term (R18), text-size (R07), font-size (R
 colour-literal (R10), upstream-res (R41).
 
 Usage: fork_resource_check.py [--write-baseline] [--base <git-ref>] [--branch <name>]
-Exits 0 when clean, 1 with one line per finding.
+Exits 0 when clean, 1 with one line per finding, 2 when the base ref cannot be diffed.
+The count rules fail when a file's count is above its baseline, below it (lower the
+baseline with --write-baseline) or the file is gone. On sync/upstream-* branches the
+count comparison is skipped, because the baseline is rewritten in the same sync PR;
+string rules and upstream-res still run.
 """
 import argparse
 import html
@@ -32,7 +36,7 @@ class Finding(NamedTuple):
 
 # --- string rules ---------------------------------------------------------
 
-_STRING_RE = re.compile(r"<(string|item)\b[^>]*>(.*?)</\1>", re.DOTALL)
+_STRING_RE = re.compile(r"<(string|item)(?=[\s>])[^>]*>(.*?)</\1>", re.DOTALL)
 _COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _WORD_RE = re.compile(r"[^\W\d_]+")
 _WORDING_RE = re.compile(r"\b(?:Click|Tap|tap|please|Please)\b|Go to Settings|!")
@@ -60,8 +64,18 @@ def _is_all_caps(text):
     return len(letters) >= 5 and letters.isupper()
 
 
+_CDATA_RE = re.compile(r"<!\[CDATA\[(.*?)\]\]>", re.DOTALL)
+_UNICODE_ESCAPE_RE = re.compile(r"\\u([0-9a-fA-F]{4})")
+
+
 def _unescape(raw):
-    text = html.unescape(re.sub(r"<[^>]+>", "", raw))
+    text = _CDATA_RE.sub(r"\1", raw)
+    text = html.unescape(re.sub(r"<[^>]+>", "", text))
+    text = _UNICODE_ESCAPE_RE.sub(lambda m: chr(int(m.group(1), 16)), text)
+    try:  # join surrogate pairs written as two \uXXXX escapes
+        text = text.encode("utf-16", "surrogatepass").decode("utf-16")
+    except UnicodeError:
+        pass
     return text.replace("\\'", "'").replace('\\"', '"')
 
 
@@ -124,13 +138,32 @@ def count_literals(root):
     return counts
 
 
-def compare(counts, baseline):
-    """Findings for every count above its baseline, or missing from it."""
+LOWER_HINT = "lower the baseline with --write-baseline"
+
+
+def is_sync_branch(branch):
+    return (branch or "").startswith("sync/upstream-")
+
+
+def compare(counts, baseline, branch=""):
+    """Findings for counts above their baseline or missing from it, and for counts below it.
+
+    A count below its baseline (or a baseline entry whose file is gone) also fails, so a
+    lowered count cannot climb back. On sync/upstream-* branches nothing is compared: the
+    baseline is rewritten in the same sync PR.
+    """
+    if is_sync_branch(branch):
+        return []
     findings = []
     for (rule, path), n in sorted(counts.items()):
         allowed = baseline.get((rule, path), 0)
         if n > allowed:
             findings.append(Finding(rule, path, 0, "%d found, baseline allows %d" % (n, allowed)))
+        elif n < allowed:
+            findings.append(Finding(rule, path, 0, "%d found, baseline has %d: %s" % (n, allowed, LOWER_HINT)))
+    for (rule, path), allowed in sorted(baseline.items()):
+        if (rule, path) not in counts and allowed > 0:
+            findings.append(Finding(rule, path, 0, "0 found, baseline has %d: %s" % (allowed, LOWER_HINT)))
     return findings
 
 
@@ -159,7 +192,7 @@ _UPSTREAM_RES_RE = re.compile(r"(?:^|/)res/values[^/]*/(?:strings|themes)\.xml$"
 
 def changed_files(base):
     out = subprocess.run(
-        ["git", "diff", "--name-only", "%s...HEAD" % base],
+        ["git", "diff", "--name-only", "--no-renames", "%s...HEAD" % base],
         cwd=ROOT, capture_output=True, text=True, check=True,
     ).stdout
     return [line.strip() for line in out.splitlines() if line.strip()]
@@ -206,8 +239,13 @@ def main(argv=None):
     for path in sorted((ROOT / RES).glob("values*/strings_fork.xml")):
         for f in check_strings(path):
             findings.append(f._replace(path=path.relative_to(ROOT).as_posix()))
-    findings += compare(counts, read_baseline(baseline_path))
-    findings += upstream_res_changed(args.base, args.branch or _current_branch())
+    branch = args.branch or _current_branch()
+    findings += compare(counts, read_baseline(baseline_path), branch)
+    try:
+        findings += upstream_res_changed(args.base, branch)
+    except subprocess.CalledProcessError:
+        print("error: cannot diff against base ref %r (is it fetched?)" % args.base)
+        return 2
 
     for f in findings:
         where = "%s:%d" % (f.path, f.line) if f.line else f.path
