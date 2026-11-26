@@ -17,6 +17,11 @@ class UiPrefsTest {
 
     @Test
     fun density_unknownValue_isStandard() {
+        assertThat(UiPrefs.densityOf(null)).isEqualTo(UiDensity.STANDARD)
+        assertThat(UiPrefs.densityOf("huge")).isEqualTo(UiDensity.STANDARD)
+        assertThat(UiPrefs.densityOf("standard")).isEqualTo(UiDensity.STANDARD)
+        assertThat(UiPrefs.densityOf("compact")).isEqualTo(UiDensity.COMPACT)
+        // The SharedPreferences reader goes through the same converter.
         prefs.edit().clear().commit()
         assertThat(UiPrefs.density(prefs)).isEqualTo(UiDensity.STANDARD)
         prefs.edit().putString(UiPrefs.KEY_UI_DENSITY, "huge").commit()
@@ -27,12 +32,19 @@ class UiPrefsTest {
 
     @Test
     fun density_wrongType_isStandard() {
+        assertThat(UiPrefs.densityOf(3)).isEqualTo(UiDensity.STANDARD)
+        assertThat(UiPrefs.densityOf(true)).isEqualTo(UiDensity.STANDARD)
         prefs.edit().clear().putInt(UiPrefs.KEY_UI_DENSITY, 3).commit()
         assertThat(UiPrefs.density(prefs)).isEqualTo(UiDensity.STANDARD)
     }
 
     @Test
     fun wallpaper_wrongType_isOff() {
+        assertThat(UiPrefs.wallpaperOf(null)).isFalse()
+        assertThat(UiPrefs.wallpaperOf("true")).isFalse()
+        assertThat(UiPrefs.wallpaperOf(1)).isFalse()
+        assertThat(UiPrefs.wallpaperOf(false)).isFalse()
+        assertThat(UiPrefs.wallpaperOf(true)).isTrue()
         prefs.edit().clear().putString(UiPrefs.KEY_USE_WALLPAPER_COLOURS, "true").commit()
         assertThat(UiPrefs.useWallpaper(prefs, 31)).isFalse()
     }

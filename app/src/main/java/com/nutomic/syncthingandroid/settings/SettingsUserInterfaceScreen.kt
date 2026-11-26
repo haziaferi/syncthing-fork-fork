@@ -49,7 +49,9 @@ fun SettingsUserInterfaceScreen() {
     val expertMode = rememberPreferenceState(Constants.PREF_EXPERT_MODE, false)
     val startInWebGui = rememberPreferenceState(Constants.PREF_START_INTO_WEB_GUI, false)
     val hideFromRecents = rememberPreferenceState(Constants.PREF_HIDE_FROM_RECENTS, false)
-    var density by rememberPreferenceState(UiPrefs.KEY_UI_DENSITY, "standard")
+    // Read as Any? so a restored value of another type shows Standard instead of throwing.
+    var storedDensity by rememberPreferenceState<Any?>(UiPrefs.KEY_UI_DENSITY, UiDensity.STANDARD.key)
+    val density = UiPrefs.densityOf(storedDensity).key
     val useWallpaperColours = rememberPreferenceState(UiPrefs.KEY_USE_WALLPAPER_COLOURS, false)
     val densityLabels = mapOf(
         UiDensity.STANDARD.key to stringResource(R.string.fork_ui_density_standard),
@@ -97,7 +99,7 @@ fun SettingsUserInterfaceScreen() {
                 title = { Text(stringResource(R.string.fork_ui_density_title)) },
                 summary = { Text(densityLabels[density] ?: densityLabels.getValue(UiDensity.STANDARD.key)) },
                 value = density,
-                onValueChange = { density = it },
+                onValueChange = { storedDensity = it },
                 values = densityLabels.keys.toList(),
                 valueToText = { value -> AnnotatedString(densityLabels[value] ?: value) }
             )
