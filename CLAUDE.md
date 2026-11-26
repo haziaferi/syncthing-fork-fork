@@ -34,9 +34,9 @@ unchanged, so upstream syncs stay clean.
   The repository does not delete merged branches by itself.
 - No version tags or releases unless the owner asks.
 - An upstream sync that fails with "Duplicate resources" for `ThemeOverlay.Syncthing.Toolbar`
-  means upstream now defines it in its own `values-night`. Delete the fork's copy in
-  `res/values-night/themes_fork.xml`: it exists only to keep the night toolbar text at 7:1
-  (spec R36).
+  means upstream now defines it in its own `values-night`. Delete only the
+  `ThemeOverlay.Syncthing.Toolbar` style from `res/values-night/themes_fork.xml` and keep the
+  rest of that file: that style exists only to keep the night toolbar text at 7:1 (spec R36).
 
 ### Which merge method
 
