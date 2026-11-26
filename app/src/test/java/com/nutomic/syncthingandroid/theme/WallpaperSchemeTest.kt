@@ -43,6 +43,29 @@ class WallpaperSchemeTest {
         }
     }
 
+    // SPEC:ui-design:R06
+    @Test
+    fun brandStatusColours_reachIconFloorOnWallpaperSurface() {
+        val failures = mutableListOf<String>()
+        for (seed in seeds) for (dark in listOf(false, true)) for (level in listOf(0.5, 1.0)) {
+            val surface = WallpaperScheme.colorScheme(seed, dark, level).surface.toArgb()
+            val st = StatusColors.brand(dark)
+            for ((name, colour) in listOf(
+                "running" to st.running,
+                "paused" to st.paused,
+                "warning" to st.warning,
+                "error" to st.error,
+                "success" to st.success,
+            )) {
+                val r = Contrast.ratio(colour.toArgb(), surface)
+                if (r < 3.0) {
+                    failures += "seed=${Integer.toHexString(seed)} dark=$dark level=$level $name %.4f".format(r)
+                }
+            }
+        }
+        assertWithMessage(failures.joinToString("\n")).that(failures).isEmpty()
+    }
+
     private fun levelFor(contrast: Float): Double {
         val context = ApplicationProvider.getApplicationContext<Context>()
         shadowOf(context.getSystemService(UiModeManager::class.java)).setContrast(contrast)

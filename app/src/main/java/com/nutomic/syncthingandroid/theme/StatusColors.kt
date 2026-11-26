@@ -4,9 +4,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * Colours for sync and folder state, from the brand palette in light or dark: running, paused and
- * error are its primary, muted (onSurfaceVariant) and error roles; warning and success are fixed
- * (R05). They stay brand in wallpaper mode too.
+ * Colours for sync and folder state. The five status colours are semantic and fixed (the brand
+ * palette's primary, muted and error roles, plus fixed warning and success, R05), so they stay
+ * apart for colour-blind users whatever the wallpaper; wallpaper mode does not change them.
+ *
+ * Per R06, text may be drawn in a status colour only where `Contrast.ratio(colour, surface) >= 7.0`;
+ * otherwise the colour goes on the icon and the word stays in the body-text colour.
  */
 data class StatusColors(
     val running: Color,
