@@ -145,7 +145,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | error | 4.5:1 | 7:1 | 7:1 |
 | outline | 3:1 | 4.5:1 | 7:1 |
 
-**Evidence:** Contrast curves from `ColorSpec2021.java` and `ContrastCurve.java` in material-foundation/material-color-utilities (main), read 2026-11-25. `SchemeTonalSpot(Hct, boolean, double contrastLevel)` builds a scheme at a chosen level. Not checked: the 2021 `SpecVersion` constant name, and which artifact gives the app Material Color Utilities (no dependency provides it today; the copy inside Material Components is internal).
+**Evidence:** Contrast curves from `ColorSpec2021.java` and `ContrastCurve.java` in material-foundation/material-color-utilities (main), read 2026-11-25. `SchemeTonalSpot(Hct, boolean, double contrastLevel)` builds a scheme at a chosen level. The app carries its own copy of Material Color Utilities, vendored from commit 5519f65a77a56bc24de922504efa8e3dfa59d992 (`theme/mcu/README.md`), because no dependency provides it and the copy inside Material Components is internal.
 
 **Acceptance:** A unit test builds the wallpaper scheme from three seeds at level 0.5 and finds onSurfaceVariant, primary and error at 7:1 or more against surface; with the switch off, every screen uses R05's values.
 
@@ -184,14 +184,14 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 **Values:**
 
-| State | Icon (Material Symbols, outlined) | Colour role |
+| State | Icon (`Icons.Outlined`) | Colour role |
 |---|---|---|
-| running, up to date | `check_circle` | primary |
-| syncing | `sync` | primary |
-| paused by your rules | `pause_circle` | muted |
-| running anyway, paused by you | `back_hand` | primary |
-| needs attention (an action the user can take, no fault) | `info` | warning |
-| fault | `error` | error |
+| running, up to date | `Icons.Outlined.CheckCircle` | primary |
+| syncing | `Icons.Outlined.Sync` | primary |
+| paused by your rules | `Icons.Outlined.PauseCircle` | muted |
+| running anyway, paused by you | `Icons.Outlined.BackHand` | primary |
+| needs attention (an action the user can take, no fault) | `Icons.Outlined.Info` | warning |
+| fault | `Icons.Outlined.ErrorOutline` | error |
 
 **Evidence:** WCAG 2.2 SC 1.4.1. Today the toolbar dot carries state by colour alone, with no content description (`widget_toolbar.xml:20-50`).
 
@@ -276,11 +276,13 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 ### D-R11 · Icons
 
-**Rule:** Icons are Material Symbols, outlined, as vectors. Emoji and symbol characters never carry meaning in the UI. PNG icons are replaced by vectors when their screen is reworked; the notification icon becomes a vector.
+**Rule:** Icons are Material Icons, outlined, from `material-icons-extended`, as vectors. Emoji and symbol characters never carry meaning in the UI. PNG icons are replaced by vectors when their screen is reworked; the notification icon becomes a vector.
 
 **Evidence:** 148 PNGs beside 56 vectors under `res/drawable*`; emoji in `backup_password_*` strings (`strings.xml:638-642`).
 
 **Acceptance:** A CI check finds no emoji code point in the fork-owned string files (R41), and no screen uses an upstream string that holds one.
+
+**Not:** Material Symbols: adds assets the existing set already covers.
 
 **Since:** 2026-11-25 · owner · agreed rewording
 
@@ -845,7 +847,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | Level | Covers | Rules | Runs |
 |---|---|---|---|
 | Unit (Robolectric) | palette ratios, wallpaper scheme levels, state words, reason lengths, summaries, density heights | R04 R05 R09 R20 R21 R29 | every commit, in CI's `testDebugUnitTest` |
-| Resource checks in CI | no emoji, no ALL CAPS, no banned terms, no text-size literals, no colour literals, upstream resource files unchanged | R07 R10 R11 R17 R18 R41 | every commit |
+| Resource checks in CI | no emoji, no ALL CAPS, no banned terms, no text-size literals, no colour literals, upstream resource files unchanged | R07 R10 R11 R17 R18 R41 | every commit, as `Fork checks / resources` (`.github/scripts/fork_resource_check.py`) |
 | Owner's phones (`.debug` build beside the release) | top bars, Settings order, help screens, Status, notification, widget, shortcuts, tile, live state line, backup screen, restore | R13 R15 R22 R23 R24 R25 R26 R27 R28 R30 R31 R32 R34 R43 | once per plan before merge |
 
 **Evidence:** speccheck 1.22.0 (dev-engineering-suite, merged 2026-11-25) reads the named form and blocks a change only for the spec a citation names; the backup and run-conditions tests use it since 2026-11-25.

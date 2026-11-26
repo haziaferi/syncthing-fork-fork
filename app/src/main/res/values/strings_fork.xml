@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The fork's own wording (spec R41). Upstream's strings.xml is not edited. -->
+<resources>
+    <string name="fork_ui_density_title">Density</string>
+    <string name="fork_ui_density_standard">Standard</string>
+    <string name="fork_ui_density_compact">Compact</string>
+    <string name="fork_ui_wallpaper_colours_title">Use wallpaper colours</string>
+    <string name="fork_ui_wallpaper_colours_summary">Colours from your wallpaper, at higher contrast</string>
+</resources>
