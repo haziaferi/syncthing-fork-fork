@@ -33,6 +33,10 @@ unchanged, so upstream syncs stay clean.
   `gh pr merge <n> -R haziaferi/syncthing-fork-fork --<method> --match-head-commit <sha> --delete-branch`.
   The repository does not delete merged branches by itself.
 - No version tags or releases unless the owner asks.
+- An upstream sync that fails with "Duplicate resources" for `ThemeOverlay.Syncthing.Toolbar`
+  means upstream now defines it in its own `values-night`. Delete the fork's copy in
+  `res/values-night/themes_fork.xml`: it exists only to keep the night toolbar text at 7:1
+  (spec R36).
 
 ### Which merge method
 

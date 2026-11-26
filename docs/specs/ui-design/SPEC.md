@@ -149,7 +149,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 **Acceptance:** A unit test builds the wallpaper scheme from three seeds at level 0.5 and finds onSurfaceVariant, primary and error at 7:1 or more against surface; with the switch off, every screen uses R05's values.
 
-**Not:** Android's own dynamic scheme as default: it gives 4.5:1 for muted text. Stock purple below Android 12, as today (`ApplicationTheme.kt:25-28`).
+**Not:** Android's own dynamic scheme as default: it gives 4.5:1 for muted text. Stock purple below Android 12, as main had until 2026-11-25.
 
 **Since:** 2026-11-25 · owner · agreed rewording
 
