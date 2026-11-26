@@ -31,7 +31,25 @@ object WallpaperScheme {
         return 0.5
     }
 
+    private data class Key(val seed: Int, val dark: Boolean, val contrastLevel: Double)
+
+    private const val CACHE_SIZE = 4
+
+    /** The last few schemes built, so nested theme roots and recompositions do not rebuild them. */
+    private val cache = object : LinkedHashMap<Key, ColorScheme>(CACHE_SIZE, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Key, ColorScheme>?) = size > CACHE_SIZE
+    }
+
+    /** The scheme for [seed] at [contrastLevel]; the same inputs return the same instance while it is cached. */
     fun colorScheme(seed: Int, dark: Boolean, contrastLevel: Double): ColorScheme {
+        val key = Key(seed, dark, contrastLevel)
+        synchronized(cache) { cache[key]?.let { return it } }
+        val built = build(seed, dark, contrastLevel)
+        synchronized(cache) { cache[key] = built }
+        return built
+    }
+
+    private fun build(seed: Int, dark: Boolean, contrastLevel: Double): ColorScheme {
         val scheme = SchemeTonalSpot(Hct.fromInt(seed), dark, contrastLevel)
         val c = MaterialDynamicColors()
         fun DynamicColor.col() = Color(getArgb(scheme))

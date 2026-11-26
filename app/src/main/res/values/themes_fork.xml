@@ -33,6 +33,24 @@
         <item name="colorSurfaceInverse">@color/fork_inverse_surface</item>
         <item name="colorOnSurfaceInverse">@color/fork_inverse_on_surface</item>
         <item name="colorPrimaryInverse">@color/fork_inverse_primary</item>
+        <item name="colorTertiaryContainer">@color/fork_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/fork_on_tertiary_container</item>
+        <item name="colorErrorContainer">@color/fork_error_container</item>
+        <item name="colorOnErrorContainer">@color/fork_on_error_container</item>
+        <item name="colorSurfaceBright">@color/fork_surface_bright</item>
+        <item name="colorSurfaceDim">@color/fork_surface_dim</item>
+        <item name="colorPrimaryFixed">@color/fork_primary_fixed</item>
+        <item name="colorPrimaryFixedDim">@color/fork_primary_fixed_dim</item>
+        <item name="colorOnPrimaryFixed">@color/fork_on_primary_fixed</item>
+        <item name="colorOnPrimaryFixedVariant">@color/fork_on_primary_fixed_variant</item>
+        <item name="colorSecondaryFixed">@color/fork_secondary_fixed</item>
+        <item name="colorSecondaryFixedDim">@color/fork_secondary_fixed_dim</item>
+        <item name="colorOnSecondaryFixed">@color/fork_on_secondary_fixed</item>
+        <item name="colorOnSecondaryFixedVariant">@color/fork_on_secondary_fixed_variant</item>
+        <item name="colorTertiaryFixed">@color/fork_tertiary_fixed</item>
+        <item name="colorTertiaryFixedDim">@color/fork_tertiary_fixed_dim</item>
+        <item name="colorOnTertiaryFixed">@color/fork_on_tertiary_fixed</item>
+        <item name="colorOnTertiaryFixedVariant">@color/fork_on_tertiary_fixed_variant</item>
 
         <!-- Upstream XML screens keep their AppCompat widgets (a <Button> stays an AppCompatButton,
              not a filled MaterialButton) until they are rebuilt (spec R02). -->
@@ -86,6 +104,24 @@
         <item name="colorSurfaceInverse">@color/fork_inverse_surface</item>
         <item name="colorOnSurfaceInverse">@color/fork_inverse_on_surface</item>
         <item name="colorPrimaryInverse">@color/fork_inverse_primary</item>
+        <item name="colorTertiaryContainer">@color/fork_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/fork_on_tertiary_container</item>
+        <item name="colorErrorContainer">@color/fork_error_container</item>
+        <item name="colorOnErrorContainer">@color/fork_on_error_container</item>
+        <item name="colorSurfaceBright">@color/fork_surface_bright</item>
+        <item name="colorSurfaceDim">@color/fork_surface_dim</item>
+        <item name="colorPrimaryFixed">@color/fork_primary_fixed</item>
+        <item name="colorPrimaryFixedDim">@color/fork_primary_fixed_dim</item>
+        <item name="colorOnPrimaryFixed">@color/fork_on_primary_fixed</item>
+        <item name="colorOnPrimaryFixedVariant">@color/fork_on_primary_fixed_variant</item>
+        <item name="colorSecondaryFixed">@color/fork_secondary_fixed</item>
+        <item name="colorSecondaryFixedDim">@color/fork_secondary_fixed_dim</item>
+        <item name="colorOnSecondaryFixed">@color/fork_on_secondary_fixed</item>
+        <item name="colorOnSecondaryFixedVariant">@color/fork_on_secondary_fixed_variant</item>
+        <item name="colorTertiaryFixed">@color/fork_tertiary_fixed</item>
+        <item name="colorTertiaryFixedDim">@color/fork_tertiary_fixed_dim</item>
+        <item name="colorOnTertiaryFixed">@color/fork_on_tertiary_fixed</item>
+        <item name="colorOnTertiaryFixedVariant">@color/fork_on_tertiary_fixed_variant</item>
 
         <item name="viewInflaterClass">androidx.appcompat.app.AppCompatViewInflater</item>
     </style>

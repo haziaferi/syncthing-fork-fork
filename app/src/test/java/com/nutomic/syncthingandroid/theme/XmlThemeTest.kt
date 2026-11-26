@@ -5,6 +5,7 @@ import android.util.TypedValue
 import android.view.ContextThemeWrapper
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import com.nutomic.syncthingandroid.R
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,6 +48,24 @@ class XmlThemeTest {
         "inverseSurface" to (R.attr.colorSurfaceInverse to R.color.fork_inverse_surface),
         "inverseOnSurface" to (R.attr.colorOnSurfaceInverse to R.color.fork_inverse_on_surface),
         "inversePrimary" to (R.attr.colorPrimaryInverse to R.color.fork_inverse_primary),
+        "tertiaryContainer" to (R.attr.colorTertiaryContainer to R.color.fork_tertiary_container),
+        "onTertiaryContainer" to (R.attr.colorOnTertiaryContainer to R.color.fork_on_tertiary_container),
+        "errorContainer" to (R.attr.colorErrorContainer to R.color.fork_error_container),
+        "onErrorContainer" to (R.attr.colorOnErrorContainer to R.color.fork_on_error_container),
+        "surfaceBright" to (R.attr.colorSurfaceBright to R.color.fork_surface_bright),
+        "surfaceDim" to (R.attr.colorSurfaceDim to R.color.fork_surface_dim),
+        "primaryFixed" to (R.attr.colorPrimaryFixed to R.color.fork_primary_fixed),
+        "primaryFixedDim" to (R.attr.colorPrimaryFixedDim to R.color.fork_primary_fixed_dim),
+        "onPrimaryFixed" to (R.attr.colorOnPrimaryFixed to R.color.fork_on_primary_fixed),
+        "onPrimaryFixedVariant" to (R.attr.colorOnPrimaryFixedVariant to R.color.fork_on_primary_fixed_variant),
+        "secondaryFixed" to (R.attr.colorSecondaryFixed to R.color.fork_secondary_fixed),
+        "secondaryFixedDim" to (R.attr.colorSecondaryFixedDim to R.color.fork_secondary_fixed_dim),
+        "onSecondaryFixed" to (R.attr.colorOnSecondaryFixed to R.color.fork_on_secondary_fixed),
+        "onSecondaryFixedVariant" to (R.attr.colorOnSecondaryFixedVariant to R.color.fork_on_secondary_fixed_variant),
+        "tertiaryFixed" to (R.attr.colorTertiaryFixed to R.color.fork_tertiary_fixed),
+        "tertiaryFixedDim" to (R.attr.colorTertiaryFixedDim to R.color.fork_tertiary_fixed_dim),
+        "onTertiaryFixed" to (R.attr.colorOnTertiaryFixed to R.color.fork_on_tertiary_fixed),
+        "onTertiaryFixedVariant" to (R.attr.colorOnTertiaryFixedVariant to R.color.fork_on_tertiary_fixed_variant),
     )
 
     private fun resolve(theme: android.content.res.Resources.Theme, attr: Int): Int {
@@ -95,8 +114,17 @@ class XmlThemeTest {
     @Test
     fun nightToolbarOverlay_textContrastOnPrimaryIsAtLeast7() {
         val base = ContextThemeWrapper(context, R.style.Theme_SyncthingFork)
-        val overlay = ContextThemeWrapper(base, R.style.ThemeOverlay_Syncthing_Toolbar)
-        val text = resolve(overlay.theme, android.R.attr.textColorPrimary)
-        assertThat(Contrast.ratio(text, context.getColor(R.color.fork_primary))).isAtLeast(7.0)
+        val primary = context.getColor(R.color.fork_primary)
+        for (style in listOf(R.style.ThemeOverlay_Syncthing_Toolbar, R.style.ThemeOverlay_SyncthingFork_Toolbar)) {
+            val overlay = ContextThemeWrapper(base, style)
+            val name = context.resources.getResourceEntryName(style)
+            for (attr in listOf(android.R.attr.textColorPrimary, R.attr.colorControlNormal)) {
+                val a = overlay.theme.obtainStyledAttributes(intArrayOf(attr))
+                val colour = a.getColor(0, 0)
+                a.recycle()
+                assertWithMessage("$name ${context.resources.getResourceEntryName(attr)}")
+                    .that(Contrast.ratio(colour, primary)).isAtLeast(7.0)
+            }
+        }
     }
 }

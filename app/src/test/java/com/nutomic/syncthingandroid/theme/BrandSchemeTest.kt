@@ -4,6 +4,8 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
+import com.nutomic.syncthingandroid.theme.mcu.dynamiccolor.MaterialDynamicColors
 import com.nutomic.syncthingandroid.theme.mcu.hct.Hct
 import com.nutomic.syncthingandroid.theme.mcu.scheme.SchemeTonalSpot
 import org.junit.Test
@@ -54,12 +56,22 @@ class BrandSchemeTest {
         for (dark in listOf(false, true)) {
             val raw = SchemeTonalSpot(Hct.fromInt(0xff0f8ecc.toInt()), dark, 0.5)
             val gen = BrandSchemeGenerator.generate(dark)
-            assertThat(gen.primaryContainer.toArgb())
-                .isEqualTo(com.nutomic.syncthingandroid.theme.mcu.dynamiccolor.MaterialDynamicColors()
-                    .primaryContainer().getArgb(raw))
+            val c = MaterialDynamicColors()
+            val direct = listOf(
+                Triple("primaryContainer", gen.primaryContainer, c.primaryContainer()),
+                Triple("surfaceTint", gen.surfaceTint, c.surfaceTint()),
+                Triple("inversePrimary", gen.inversePrimary, c.inversePrimary()),
+                Triple("surfaceContainerHigh", gen.surfaceContainerHigh, c.surfaceContainerHigh()),
+                Triple("outlineVariant", gen.outlineVariant, c.outlineVariant()),
+                Triple("onSecondaryFixedVariant", gen.onSecondaryFixedVariant, c.onSecondaryFixedVariant()),
+            )
+            for ((name, colour, dynamic) in direct) {
+                assertWithMessage("$name dark=$dark").that(colour.toArgb()).isEqualTo(dynamic.getArgb(raw))
+            }
         }
     }
 
+    // SPEC:ui-design:R05
     @Test
     fun statusColours_apartUnderColourVision() {
         for (dark in listOf(false, true)) {
@@ -72,8 +84,7 @@ class BrandSchemeTest {
                 "protanopia" to ColourVisionTestHelper.protanopia,
             )) {
                 val (d, i, j) = ColourVisionTestHelper.worstPair(set, m)
-                println("CVD dark=$dark $label worst=${names[i]}/${names[j]} dE=$d")
-                assertThat(d).isAtLeast(10.0)
+                assertWithMessage("CVD dark=$dark $label worst=${names[i]}/${names[j]}").that(d).isAtLeast(10.0)
             }
             assertThat(st.running).isEqualTo(s.primary)
         }

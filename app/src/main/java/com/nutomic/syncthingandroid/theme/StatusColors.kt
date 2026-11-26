@@ -3,7 +3,11 @@ package com.nutomic.syncthingandroid.theme
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** Colours for sync and folder state; running and paused follow the scheme, the rest are fixed. */
+/**
+ * Colours for sync and folder state, from the brand palette in light or dark: running, paused and
+ * error are its primary, muted (onSurfaceVariant) and error roles; warning and success are fixed
+ * (R05). They stay brand in wallpaper mode too.
+ */
 data class StatusColors(
     val running: Color,
     val paused: Color,

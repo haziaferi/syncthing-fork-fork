@@ -29,4 +29,22 @@
     <color name="fork_inverse_surface">#e0e3e8</color>
     <color name="fork_inverse_on_surface">#262a2e</color>
     <color name="fork_inverse_primary">#004d71</color>
+    <color name="fork_tertiary_container">#988ab0</color>
+    <color name="fork_on_tertiary_container">#000000</color>
+    <color name="fork_error_container">#ff5449</color>
+    <color name="fork_on_error_container">#000000</color>
+    <color name="fork_surface_bright">#414549</color>
+    <color name="fork_surface_dim">#101417</color>
+    <color name="fork_primary_fixed">#cae6ff</color>
+    <color name="fork_primary_fixed_dim">#96cdf8</color>
+    <color name="fork_on_primary_fixed">#001320</color>
+    <color name="fork_on_primary_fixed_variant">#003a57</color>
+    <color name="fork_secondary_fixed">#d3e5f5</color>
+    <color name="fork_secondary_fixed_dim">#b7c9d9</color>
+    <color name="fork_on_secondary_fixed">#02131e</color>
+    <color name="fork_on_secondary_fixed_variant">#283845</color>
+    <color name="fork_tertiary_fixed">#ebddff</color>
+    <color name="fork_tertiary_fixed_dim">#cfc0e8</color>
+    <color name="fork_on_tertiary_fixed">#150b29</color>
+    <color name="fork_on_tertiary_fixed_variant">#3b3151</color>
 </resources>

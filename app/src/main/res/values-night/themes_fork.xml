@@ -10,4 +10,14 @@
         <item name="colorControlNormal">@color/fork_on_primary</item>
         <item name="actionMenuTextColor">@color/fork_on_primary</item>
     </style>
+
+    <!-- The same night fix for the fork's own toolbar overlay (values/themes_fork.xml). -->
+    <style name="ThemeOverlay.SyncthingFork.Toolbar" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <item name="android:windowBackground">@null</item>
+        <item name="colorAccent">@color/fork_on_primary</item>
+        <item name="android:textColorPrimary">@color/fork_on_primary</item>
+        <item name="android:textColorSecondary">@color/fork_on_primary</item>
+        <item name="colorControlNormal">@color/fork_on_primary</item>
+        <item name="actionMenuTextColor">@color/fork_on_primary</item>
+    </style>
 </resources>

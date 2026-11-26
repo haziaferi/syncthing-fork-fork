@@ -56,4 +56,21 @@ class WallpaperSchemeTest {
         assertThat(levelFor(0.5f)).isEqualTo(0.5)
         assertThat(levelFor(0f)).isEqualTo(0.5)
     }
+
+    // SPEC:ui-design:R04
+    @Test
+    @Config(sdk = [33])
+    fun contrastLevel_beforeApi34_isHalf() {
+        // Android 12 and 13 have no system contrast setting, so the level is always 0.5.
+        assertThat(WallpaperScheme.contrastLevel(ApplicationProvider.getApplicationContext())).isEqualTo(0.5)
+    }
+
+    @Test
+    fun colorScheme_sameInputs_reuseTheScheme() {
+        val first = WallpaperScheme.colorScheme(seeds[0], false, 0.5)
+        assertThat(WallpaperScheme.colorScheme(seeds[0], false, 0.5)).isSameInstanceAs(first)
+        assertThat(WallpaperScheme.colorScheme(seeds[0], true, 0.5)).isNotSameInstanceAs(first)
+        assertThat(WallpaperScheme.colorScheme(seeds[0], false, 1.0)).isNotSameInstanceAs(first)
+        assertThat(WallpaperScheme.colorScheme(seeds[1], false, 0.5)).isNotSameInstanceAs(first)
+    }
 }
