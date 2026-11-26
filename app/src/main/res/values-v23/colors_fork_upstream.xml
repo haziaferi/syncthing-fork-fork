@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork overrides of upstream colours still drawn on screen, remapped onto the fork's tokens so they
+     clear spec R36 (7:1 for text under 24 sp, 3:1 for icons). minSdk is 23, so values-v23 always
+     applies and wins over upstream's values/colors.xml without a duplicate-resource error; upstream's
+     own files stay unchanged (R41). Night values that upstream sets in values-night are overridden
+     in values-night-v23. -->
+<resources>
+    <!-- List status text (FoldersAdapter, DevicesAdapter, item_folder_list). R06: warning and success
+         colours are for icons only, so waiting (orange) and up to date (green) read as plain text. -->
+    <color name="text_blue">@color/fork_primary</color>
+    <color name="text_purple">@color/fork_on_surface_variant</color>
+    <color name="text_red">@color/fork_error</color>
+    <color name="text_orange">@color/fork_on_surface</color>
+    <color name="text_green">@color/fork_on_surface</color>
+
+    <!-- Share screen links and the main screen's exit button. -->
+    <color name="accent">@color/fork_primary</color>
+    <color name="primary">@color/fork_primary</color>
+
+    <!-- Camera intro background: upstream's #5e7c8b at a lower lightness, white text 7.7:1. -->
+    <color name="bg_screen4">#3e5663</color>
+    <!-- Camera intro buttons at night: the light-mode grey, so their black labels stay 14.6:1. -->
+    <color name="fork_intro_button">#d6d7d7</color>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Night override of upstream's camera-intro button style (values-night/themes.xml), applied to its
+     <Button>s as a view style: their black labels sat on AppCompat's dark button grey (3.0:1), so at
+     night the buttons keep the light-mode grey (14.6:1, 5.4:1 against the intro background).
+     values-night-v23 outranks values-night and always applies (minSdk 23). -->
+<resources>
+    <style name="Theme.Syncthing.GreyButton" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="android:textColor">@color/btn_welcome_slide_color</item>
+        <item name="backgroundTint">@color/fork_intro_button</item>
+    </style>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Night overrides of upstream colours that upstream also sets in values-night (which outranks
+     values-v23), plus the usage-reporting dialog's light grey box, which held light text at night
+     (1.3:1). See values-v23/colors_fork_upstream.xml. -->
+<resources>
+    <color name="primary">@color/fork_primary</color>
+    <color name="light_grey">@color/fork_surface_container_high</color>
+</resources>
