@@ -216,3 +216,11 @@ project.afterEvaluate {
             }
     }
 }
+
+// Fork: libraries copied into the source tree have no Gradle metadata, so the licences screen lists
+// them from app/aboutlibraries/libraries/*.json.
+aboutLibraries {
+    collect {
+        configPath = file("aboutlibraries")
+    }
+}
