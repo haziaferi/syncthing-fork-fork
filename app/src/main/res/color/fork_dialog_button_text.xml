@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text of AppCompat alert dialog buttons under the fork's dialog theme. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/fork_on_surface" android:alpha="0.38" />
+    <item android:color="@color/fork_primary" />
+</selector>
