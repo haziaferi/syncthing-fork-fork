@@ -25,7 +25,7 @@ object BrandSchemeGenerator {
             background = surface,
             onSurface = onSurface,
             onBackground = onSurface,
-            primary = c(0xff005b86, 0xff39a8e7),
+            primary = c(0xff004872, 0xff68ccff),
             onPrimary = c(0xffffffff, 0xff0f1416),
             onSurfaceVariant = c(0xff485861, 0xff8ea2ae),
             error = c(0xffb00014, 0xffff746a),

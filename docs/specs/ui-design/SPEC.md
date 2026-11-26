@@ -163,20 +163,20 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 |---|---|---|---|---|---|
 | surface | `#f6fafd` | — | `#0f1416` | — | ground |
 | text | `#0b2230` | 15.6:1 | `#dfe8ee` | 14.9:1 | body text |
-| primary | `#005b86` | 7.0:1 | `#39a8e7` | 7.0:1 | buttons, links, the running state; its label 7.0:1 |
+| primary | `#004872` | 9.2:1 | `#68ccff` | 10.3:1 | buttons, links, the running state; its label 9.7:1 light, 10.3:1 dark; 7.1:1 on dialog backgrounds |
 | muted | `#485861` | 7.0:1 | `#8ea2ae` | 7.0:1 | secondary text, the paused state |
 | warning | `#b78a00` | 3.0:1 | `#ffc107` | 11.4:1 | icons only in light mode |
 | error | `#b00014` | 7.0:1 | `#ff746a` | 7.0:1 | fault icons and fault text |
 | success | `#247a3c` | 5.1:1 | `#2e7d32` | 3.6:1 | icons only |
 | brand mark | `#0f8ecc` | 3.6:1 | `#0f8ecc` | 4.9:1 | the logo only |
 
-**Evidence:** Source: `res/mipmap-xxxhdpi/ic_launcher.png` through `dk extract`, fitted with `dk fit --text-min 7`, checked with `dk fitness` and `dk palette` (fills) on 2026-11-25. Status roles apart under colour-vision simulation: worst CIEDE2000 10.3 light (error and success, deuteranopia), 14.3 dark; floor 10. Harmony: split-complementary, fit 0.80. Record: direction file.
+**Evidence:** Source: `res/mipmap-xxxhdpi/ic_launcher.png` through `dk extract`, fitted with `dk fit --text-min 7`, checked with `dk fitness` and `dk palette` (fills) on 2026-11-25. Status roles apart under colour-vision simulation: worst CIEDE2000 10.3 light (error and success, deuteranopia), 14.3 dark; floor 10. Harmony: split-complementary, fit 0.80. Record: direction file. Primary moved on 2026-11-26 from `#005b86` / `#39a8e7` (same hue, CIELAB a* b* kept, L* shifted) because text buttons on dialog backgrounds (surfaceContainerHigh) measured 5.4:1 light and 4.8:1 dark on the phones.
 
-**Acceptance:** A unit test reads the theme's colour tokens and finds every ratio in the table within 0.05 of the stated value against the surface of its mode.
+**Acceptance:** A unit test reads the theme's colour tokens and finds every ratio in the table within 0.05 of the stated value against the surface of its mode, and primary at 7:1 or more on surfaceContainerHigh in both modes.
 
 **Not:** Today's `#03A9F4` primary with amber accent (`colors.xml:3-5`): white text on it is 2.7:1.
 
-**Since:** 2026-11-25 · owner · agreed rewording
+**Since:** 2026-11-26 · owner · primary moved to reach 7:1 on dialog backgrounds
 
 ### D-R06 · Status shown by more than colour
 
@@ -862,7 +862,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 - R03 · Purpose profile and registers: On every glance surface and on Status, a pause by the user's rules shows no error or warning colour, and a fault shows the error role with an icon and an action.
 - R04 · Colour source: A unit test builds the wallpaper scheme from three seeds at level 0.5 and finds onSurfaceVariant, primary and error at 7:1 or more against surface; with the switch off, every screen uses R05's values.
-- R05 · Brand palette: A unit test reads the theme's colour tokens and finds every ratio in the table within 0.05 of the stated value against the surface of its mode.
+- R05 · Brand palette: A unit test reads the theme's colour tokens and finds every ratio in the table within 0.05 of the stated value against the surface of its mode, and primary at 7:1 or more on surfaceContainerHigh in both modes.
 - R06 · Status shown by more than colour: On each glance surface and Status, every state carries its icon and word, and TalkBack reads the word.
 - R07 · Typography: A lint or grep in CI finds no `textSize` literal in layouts and no `fontSize =` override in Compose outside the theme.
 - R08 · Shape: No component overrides its Material 3 shape outside the theme.

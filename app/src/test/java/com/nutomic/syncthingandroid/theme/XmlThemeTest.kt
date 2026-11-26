@@ -92,7 +92,7 @@ class XmlThemeTest {
     @Test
     fun forkTheme_resolvesBrandRoles() {
         assertThat(resolve(ContextThemeWrapper(context, R.style.Theme_SyncthingFork).theme, R.attr.colorPrimary))
-            .isEqualTo(0xff005b86.toInt())
+            .isEqualTo(0xff004872.toInt())
         assertThat(resolve(ContextThemeWrapper(context, R.style.Theme_SyncthingFork).theme, R.attr.colorSurface))
             .isEqualTo(0xfff6fafd.toInt())
         checkRoles(dark = false)
@@ -103,7 +103,7 @@ class XmlThemeTest {
     @Test
     fun forkTheme_resolvesBrandRolesAtNight() {
         assertThat(resolve(ContextThemeWrapper(context, R.style.Theme_SyncthingFork).theme, R.attr.colorPrimary))
-            .isEqualTo(0xff39a8e7.toInt())
+            .isEqualTo(0xff68ccff.toInt())
         assertThat(resolve(ContextThemeWrapper(context, R.style.Theme_SyncthingFork).theme, R.attr.colorSurface))
             .isEqualTo(0xff0f1416.toInt())
         checkRoles(dark = true)

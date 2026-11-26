@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Brand colours for the XML screens (dark). Values come from BrandScheme.xmlRoles(true). -->
 <resources>
-    <color name="fork_primary">#39a8e7</color>
+    <color name="fork_primary">#68ccff</color>
     <color name="fork_on_primary">#0f1416</color>
     <color name="fork_primary_container">#5f96bf</color>
     <color name="fork_on_primary_container">#000000</color>

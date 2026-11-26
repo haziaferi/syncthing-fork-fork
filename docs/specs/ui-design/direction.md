@@ -54,7 +54,7 @@ Source: the launcher icon (`res/mipmap-xxxhdpi/ic_launcher.png`), blues around `
 |---|---|---|---|---|---|
 | surface | `#f6fafd` | — | `#0f1416` | — | the ground |
 | text | `#0b2230` | 15.6:1 | `#dfe8ee` | 14.9:1 | all body text |
-| primary | `#005b86` | 7.0:1 | `#39a8e7` | 7.0:1 | buttons, links, running state; white label on it 7.0:1 (light), surface label 7.0:1 (dark) |
+| primary | `#005b86` | 7.0:1 | `#39a8e7` | 7.0:1 | buttons, links, running state; white label on it 7.0:1 (light), surface label 7.0:1 (dark); moved on 2026-11-26 to `#004872` / `#68ccff` for 7:1 on dialog backgrounds (SPEC R05) |
 | muted | `#485861` | 7.0:1 | `#8ea2ae` | 7.0:1 | secondary text, the paused-by-rules state |
 | warning | `#b78a00` | 3.0:1 | `#ffc107` | 11.4:1 | icons only in light mode; never text there |
 | error | `#b00014` | 7.0:1 | `#ff746a` | 7.0:1 | fault icon and fault text |

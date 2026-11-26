@@ -2,7 +2,7 @@
 <!-- Brand colours for the XML screens (light). Values come from BrandScheme.xmlRoles(false);
      values-night/colors_fork.xml holds the dark ones. -->
 <resources>
-    <color name="fork_primary">#005b86</color>
+    <color name="fork_primary">#004872</color>
     <color name="fork_on_primary">#ffffff</color>
     <color name="fork_primary_container">#397299</color>
     <color name="fork_on_primary_container">#ffffff</color>

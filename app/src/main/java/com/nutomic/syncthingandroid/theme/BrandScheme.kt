@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 object BrandScheme {
 
     val light: ColorScheme = lightColorScheme(
-        primary = Color(0xff005b86),
+        primary = Color(0xff004872),
         onPrimary = Color(0xffffffff),
         primaryContainer = Color(0xff397299),
         onPrimaryContainer = Color(0xffffffff),
@@ -66,7 +66,7 @@ object BrandScheme {
     )
 
     val dark: ColorScheme = darkColorScheme(
-        primary = Color(0xff39a8e7),
+        primary = Color(0xff68ccff),
         onPrimary = Color(0xff0f1416),
         primaryContainer = Color(0xff5f96bf),
         onPrimaryContainer = Color(0xff000000),

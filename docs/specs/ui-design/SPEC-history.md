@@ -69,3 +69,4 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-25 · R06 · changed · icons named as Icons.Outlined from material-icons-extended · owner
 - 2026-11-25 · R11 · changed · Material Icons outlined, not Material Symbols · owner
 - 2026-11-25 · R38 · changed · resource check named Fork checks / resources · owner
+- 2026-11-26 · R05 · changed · primary #004872 / #68ccff, 7:1 on dialog backgrounds; was #005b86 / #39a8e7 · owner

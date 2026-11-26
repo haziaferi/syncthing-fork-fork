@@ -28,8 +28,8 @@ class BrandSchemeTest {
     fun rolesMatchSpec_withinTolerance() {
         val light = ratios(BrandScheme.light, StatusColors.brand(false))
         val dark = ratios(BrandScheme.dark, StatusColors.brand(true))
-        val expectedLight = listOf(15.6, 7.0, 7.0, 3.0, 7.0, 5.1)
-        val expectedDark = listOf(14.9, 7.0, 7.0, 11.4, 7.0, 3.6)
+        val expectedLight = listOf(15.6, 7.0, 9.22, 3.0, 7.0, 5.1)
+        val expectedDark = listOf(14.9, 7.0, 10.31, 11.4, 7.0, 3.6)
         for (i in expectedLight.indices) {
             assertThat(light[i]).isWithin(0.05).of(expectedLight[i])
             assertThat(dark[i]).isWithin(0.05).of(expectedDark[i])
@@ -39,6 +39,16 @@ class BrandSchemeTest {
             .isAtLeast(7.0)
         assertThat(Contrast.ratio(argb(BrandScheme.dark.onPrimary), argb(BrandScheme.dark.primary)))
             .isAtLeast(7.0)
+    }
+
+    /** Dialogs sit on surfaceContainerHigh; their text buttons are primary, small text, so 7:1 (R36). */
+    // SPEC:ui-design:R05
+    @Test
+    fun primaryOnDialogBackground_atLeast7() {
+        for ((mode, s) in listOf("light" to BrandScheme.light, "dark" to BrandScheme.dark)) {
+            assertWithMessage("$mode primary on surfaceContainerHigh")
+                .that(Contrast.ratio(argb(s.primary), argb(s.surfaceContainerHigh))).isAtLeast(7.0)
+        }
     }
 
     @Test
