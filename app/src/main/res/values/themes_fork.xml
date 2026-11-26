@@ -16,6 +16,23 @@
         <item name="colorOutline">@color/fork_outline</item>
         <item name="android:colorBackground">@color/fork_background</item>
         <item name="colorAccent">@color/fork_primary</item>
+        <item name="colorSecondary">@color/fork_secondary</item>
+        <item name="colorOnSecondary">@color/fork_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/fork_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/fork_on_secondary_container</item>
+        <item name="colorTertiary">@color/fork_tertiary</item>
+        <item name="colorOnTertiary">@color/fork_on_tertiary</item>
+        <item name="colorSurfaceVariant">@color/fork_surface_variant</item>
+        <item name="colorOutlineVariant">@color/fork_outline_variant</item>
+        <item name="colorOnBackground">@color/fork_on_background</item>
+        <item name="colorSurfaceContainerLowest">@color/fork_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/fork_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/fork_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/fork_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/fork_surface_container_highest</item>
+        <item name="colorSurfaceInverse">@color/fork_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/fork_inverse_on_surface</item>
+        <item name="colorPrimaryInverse">@color/fork_inverse_primary</item>
 
         <item name="textAppearanceListItemPrimary">@style/TextAppearance.Syncthing.ListItemPrimary</item>
         <item name="textAppearanceListItemSecondary">@style/TextAppearance.Syncthing.ListItemSecondary</item>
@@ -44,7 +61,27 @@
         <item name="colorError">@color/fork_error</item>
         <item name="colorOnError">@color/fork_on_error</item>
         <item name="colorOutline">@color/fork_outline</item>
+        <item name="colorPrimaryContainer">@color/fork_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/fork_on_primary_container</item>
+        <item name="android:colorBackground">@color/fork_background</item>
         <item name="colorAccent">@color/fork_primary</item>
+        <item name="colorSecondary">@color/fork_secondary</item>
+        <item name="colorOnSecondary">@color/fork_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/fork_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/fork_on_secondary_container</item>
+        <item name="colorTertiary">@color/fork_tertiary</item>
+        <item name="colorOnTertiary">@color/fork_on_tertiary</item>
+        <item name="colorSurfaceVariant">@color/fork_surface_variant</item>
+        <item name="colorOutlineVariant">@color/fork_outline_variant</item>
+        <item name="colorOnBackground">@color/fork_on_background</item>
+        <item name="colorSurfaceContainerLowest">@color/fork_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/fork_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/fork_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/fork_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/fork_surface_container_highest</item>
+        <item name="colorSurfaceInverse">@color/fork_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/fork_inverse_on_surface</item>
+        <item name="colorPrimaryInverse">@color/fork_inverse_primary</item>
     </style>
 
     <!-- Defined for the rebuilt screens; the layouts that name ThemeOverlay.Syncthing.Toolbar keep it for now. -->

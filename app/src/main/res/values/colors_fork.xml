@@ -13,4 +13,21 @@
     <color name="fork_error">#b00014</color>
     <color name="fork_on_error">#ffffff</color>
     <color name="fork_outline">#4d5359</color>
+    <color name="fork_secondary">#283845</color>
+    <color name="fork_on_secondary">#ffffff</color>
+    <color name="fork_secondary_container">#5e6f7d</color>
+    <color name="fork_on_secondary_container">#ffffff</color>
+    <color name="fork_tertiary">#3b3151</color>
+    <color name="fork_on_tertiary">#ffffff</color>
+    <color name="fork_surface_variant">#dde3ea</color>
+    <color name="fork_outline_variant">#686e74</color>
+    <color name="fork_on_background">#0b2230</color>
+    <color name="fork_surface_container_lowest">#ffffff</color>
+    <color name="fork_surface_container_low">#f1f4f9</color>
+    <color name="fork_surface_container">#e5e8ed</color>
+    <color name="fork_surface_container_high">#dadde2</color>
+    <color name="fork_surface_container_highest">#cfd2d7</color>
+    <color name="fork_inverse_surface">#2d3135</color>
+    <color name="fork_inverse_on_surface">#eef1f6</color>
+    <color name="fork_inverse_primary">#96cdf8</color>
 </resources>
