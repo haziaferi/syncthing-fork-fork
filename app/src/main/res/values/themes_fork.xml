@@ -53,8 +53,10 @@
         <item name="colorOnTertiaryFixedVariant">@color/fork_on_tertiary_fixed_variant</item>
 
         <!-- Upstream XML screens keep their AppCompat widgets (a <Button> stays an AppCompatButton,
-             not a filled MaterialButton) until they are rebuilt (spec R02). -->
-        <item name="viewInflaterClass">androidx.appcompat.app.AppCompatViewInflater</item>
+             not a filled MaterialButton) until they are rebuilt (spec R02). @null overrides Material's
+             inflater and makes AppCompat construct its own directly; a class name here would be looked
+             up by reflection, which fails in release because R8 renames AppCompatViewInflater. -->
+        <item name="viewInflaterClass">@null</item>
 
         <item name="textAppearanceListItemPrimary">@style/TextAppearance.Syncthing.ListItemPrimary</item>
         <item name="textAppearanceListItemSecondary">@style/TextAppearance.Syncthing.ListItemSecondary</item>
@@ -123,7 +125,7 @@
         <item name="colorOnTertiaryFixed">@color/fork_on_tertiary_fixed</item>
         <item name="colorOnTertiaryFixedVariant">@color/fork_on_tertiary_fixed_variant</item>
 
-        <item name="viewInflaterClass">androidx.appcompat.app.AppCompatViewInflater</item>
+        <item name="viewInflaterClass">@null</item>
     </style>
 
     <!-- Defined for the rebuilt screens; the layouts that name ThemeOverlay.Syncthing.Toolbar keep it for now. -->

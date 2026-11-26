@@ -1,14 +1,12 @@
 package com.nutomic.syncthingandroid.theme
 
 import android.os.Bundle
-import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.view.ContextThemeWrapper
 import android.widget.Button
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatViewInflater
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.widget.TextViewCompat
 import androidx.test.core.app.ApplicationProvider
@@ -79,14 +77,21 @@ class XmlInflationTest {
         checkButtons(R.layout.item_folder_list, count = 2, withStartIcon = setOf(R.id.override, R.id.revert))
     }
 
+    /**
+     * AppCompat reads viewInflaterClass with TypedArray.getString. A class name would be looked up by
+     * reflection, which fails in release builds because R8 renames AppCompatViewInflater; null makes
+     * AppCompat construct its default inflater directly. The value must override the
+     * MaterialComponentsViewInflater that the Material 3 parent themes set.
+     */
     @Test
-    fun forkThemes_useAppCompatViewInflater() {
+    fun forkThemes_clearViewInflaterClass() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         for (style in listOf(R.style.Theme_SyncthingFork, R.style.Theme_SyncthingFork_Dialog)) {
-            val value = TypedValue()
-            val theme = ContextThemeWrapper(context, style).theme
-            assertThat(theme.resolveAttribute(androidx.appcompat.R.attr.viewInflaterClass, value, true)).isTrue()
-            assertThat(value.string.toString()).isEqualTo(AppCompatViewInflater::class.java.name)
+            val themed = ContextThemeWrapper(context, style)
+            val a = themed.obtainStyledAttributes(androidx.appcompat.R.styleable.AppCompatTheme)
+            val name = a.getString(androidx.appcompat.R.styleable.AppCompatTheme_viewInflaterClass)
+            a.recycle()
+            assertWithMessage(context.resources.getResourceEntryName(style)).that(name).isNull()
         }
     }
 }
