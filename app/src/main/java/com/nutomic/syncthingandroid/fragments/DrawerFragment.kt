@@ -85,7 +85,7 @@ class DrawerFragment : Fragment(), OnServiceStateChangeListener {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
 
         setContent {
-            ApplicationTheme {
+            ApplicationTheme(allowWallpaper = false) {
                 DrawerContent(stServiceRunning.value, focusRequested)
             }
         }
