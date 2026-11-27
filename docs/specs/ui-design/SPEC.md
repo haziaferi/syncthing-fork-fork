@@ -471,7 +471,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 ### D-R21 · Reasons
 
-**Rule:** Each reason in the run-decision explanation has a short form for glance surfaces, at most 48 characters, and a long form for Status, in the words below. They replace every `reason_*` string in `strings.xml:893-930`, and finalise run-conditions R10's reason.
+**Rule:** Each reason in the run-decision explanation has a short form for glance surfaces, at most 48 characters, and a long form for Status, in the words below. While Syncthing runs, the explanation shows the reasons that let it run; while it is paused, the reasons that stop it. They replace every `reason_*` string in `strings.xml:893-930`, and finalise run-conditions R10's reason.
 
 **Why:** Today's reasons repeat "Syncthing is …", use "WiFi" and "whitelisted", and one names a setting that does not exist ("Run on selected WiFi networks").
 
