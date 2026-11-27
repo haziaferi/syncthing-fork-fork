@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import androidx.annotation.StringRes
+import androidx.core.content.edit
+import androidx.core.util.Consumer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.nutomic.syncthingandroid.R
@@ -23,7 +25,12 @@ enum class StateAction(@StringRes val label: Int, val forceStateAfter: Int?) {
 
 /** The state button's action in this state, or null when there is none (SPEC:ui-design:R25). */
 val RunState.button: StateAction?
-    get() = when (this) {
+    get() = StateButtons.buttonFor(this)
+
+object StateButtons {
+    /** The state button's action in [state], or null when there is none (SPEC:ui-design:R25). */
+    @JvmStatic
+    fun buttonFor(state: RunState): StateAction? = when (state) {
         RunState.RUNNING, RunState.SYNCING -> StateAction.PAUSE
         RunState.PAUSED_BY_RULES -> StateAction.RUN_ANYWAY
         RunState.RUNNING_ANYWAY, RunState.PAUSED_BY_YOU -> StateAction.FOLLOW_RULES
@@ -31,22 +38,25 @@ val RunState.button: StateAction?
         RunState.STOPPED -> StateAction.OPEN_STATUS
     }
 
-object StateButtons {
     /**
      * Stores the action's force choice and asks the run-condition monitor to decide again.
-     * [StateAction.OPEN_STATUS] stores and sends nothing: opening Status is the surface's job.
+     * Returns true when it did. [StateAction.OPEN_STATUS] stores and sends nothing and returns
+     * false: opening Status is the caller's job.
      */
-    fun perform(action: StateAction, prefs: SharedPreferences, send: (Intent) -> Unit) {
-        val force = action.forceStateAfter ?: return
-        prefs.edit().putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, force).commit()
-        send(Intent(RunConditionMonitor.ACTION_UPDATE_SHOULDRUN_DECISION))
+    @JvmStatic
+    fun perform(action: StateAction, prefs: SharedPreferences, send: Consumer<Intent>): Boolean {
+        val force = action.forceStateAfter ?: return false
+        prefs.edit { putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, force) }
+        send.accept(Intent(RunConditionMonitor.ACTION_UPDATE_SHOULDRUN_DECISION))
+        return true
     }
-}
 
-fun StateButtons.perform(action: StateAction, context: Context) {
-    perform(
-        action,
-        PreferenceManager.getDefaultSharedPreferences(context),
-        LocalBroadcastManager.getInstance(context)::sendBroadcast
-    )
+    /** [perform] with the default preferences and the app's local broadcasts. */
+    @JvmStatic
+    fun perform(action: StateAction, context: Context): Boolean {
+        val broadcasts = LocalBroadcastManager.getInstance(context)
+        return perform(action, PreferenceManager.getDefaultSharedPreferences(context)) {
+            broadcasts.sendBroadcast(it)
+        }
+    }
 }

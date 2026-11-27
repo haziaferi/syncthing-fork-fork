@@ -95,8 +95,9 @@ class StateButtonTest {
             val action = start.state.button!!
             assertThat(action).isNotEqualTo(StateAction.OPEN_STATUS)
 
-            StateButtons.perform(action, prefs) { sent.add(it) }
+            val stored = StateButtons.perform(action, prefs) { sent.add(it) }
 
+            assertWithMessage("perform from ${start.state}").that(stored).isEqualTo(true)
             val after = RunState.of(start.service, force(), 100)
             when (action) {
                 StateAction.PAUSE -> assertThat(after).isEqualTo(RunState.PAUSED_BY_YOU)
@@ -117,9 +118,10 @@ class StateButtonTest {
     }
 
     @Test
-    fun openStatus_changesNothing() {
+    fun openStatus_returnsFalseAndChangesNothing() {
         setForce(Constants.BTNSTATE_FORCE_STOP)
-        StateButtons.perform(StateAction.OPEN_STATUS, prefs) { sent.add(it) }
+        val stored = StateButtons.perform(StateAction.OPEN_STATUS, prefs) { sent.add(it) }
+        assertThat(stored).isEqualTo(false)
         assertThat(force()).isEqualTo(Constants.BTNSTATE_FORCE_STOP)
         assertThat(sent).isEmpty()
     }
