@@ -287,6 +287,11 @@ public final class RunConditionEvaluator {
         if (!whitelistEnabled) {
             return new Check(true, Reason.ON_WHITELISTED_WIFI);
         }
+        // The list applies only to Wi-Fi: Ethernet has no name to match, and it runs.
+        // SPEC:run-conditions:R08
+        if (device.ethernetConnected) {
+            return new Check(true, Reason.ON_WHITELISTED_WIFI);
+        }
         if (!device.wifiInfoAvailable) {
             // Wi-Fi may have been turned off in the meantime.
             return new Check(false, Reason.NOT_ON_WHITELISTED_WIFI);

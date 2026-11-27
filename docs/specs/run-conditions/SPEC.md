@@ -168,10 +168,11 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 | roaming | the mobile network that counts |
 | Wi-Fi name, API 31 and later | that Wi-Fi network's `NetworkCapabilities` transport info |
 | Wi-Fi name, API 23 to 30 | `WifiManager.getConnectionInfo()` |
+| Wi-Fi name, on Ethernet | none: the Wi-Fi list does not apply, and Ethernet runs |
 
-**Acceptance:** Unit tests: an unmetered Wi-Fi with a metered default network runs under "unmetered Wi-Fi only"; a metered Wi-Fi does not; a whitelisted name runs, and a hidden name gives the location reason.
+**Acceptance:** Unit tests: an unmetered Wi-Fi with a metered default network runs under "unmetered Wi-Fi only"; a metered Wi-Fi does not; a whitelisted name runs, and a hidden name gives the location reason; Ethernet runs with the Wi-Fi list on, for the whole app and for a folder's or device's own list.
 
-**Since:** 2026-11-24 · builder · own words
+**Since:** 2026-11-27 · owner · agreed rewording
 
 ## 4. Acting on the decision
 
@@ -221,7 +222,7 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 - R05 · Network snapshot: A unit test with a VPN and a Wi-Fi network connected builds a snapshot with only the Wi-Fi, and the decision under "Run on Wi-Fi" is to run.
 - R06 · Physical networks stay visible under a VPN: In the device run, a VPN over Wi-Fi leaves the Wi-Fi network in the snapshot with its metered state.
 - R07 · Which network counts: Unit tests for each row, for the whole-app decision and for per-object conditions.
-- R08 · Metered, roaming and Wi-Fi name: Unit tests: an unmetered Wi-Fi with a metered default network runs under "unmetered Wi-Fi only"; a metered Wi-Fi does not; a whitelisted name runs, and a hidden name gives the location reason.
+- R08 · Metered, roaming and Wi-Fi name: Unit tests: an unmetered Wi-Fi with a metered default network runs under "unmetered Wi-Fi only"; a metered Wi-Fi does not; a whitelisted name runs, and a hidden name gives the location reason; Ethernet runs with the Wi-Fi list on, for the whole app and for a folder's or device's own list.
 - R09 · Stop delay: Unit tests: the network drops for 5 seconds and returns, and Syncthing keeps running with folders unpaused; it drops for 11 seconds, and Syncthing stops; force-stop and a time-window end stop at once; a folder's wait is not carried over a stop.
 - R10 · Explanation of the decision: A unit test for R07's third row finds the new reason in the decision.
 - R13 · Test plan: CI's Build / Build Debug check passes on the pull request, and the phone runs are logged in the plan's progress section.

@@ -498,6 +498,55 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).doesNotContain(Reason.NOT_ON_WHITELISTED_WIFI);
     }
 
+    /** Ethernet has no Wi-Fi name, and the Wi-Fi list applies only to Wi-Fi. */
+    // SPEC:run-conditions:R08
+    @Test
+    public void ethernet_wifiListOn_noWifi_runs() {
+        prefs.edit()
+                .putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true)
+                .putStringSet(Constants.PREF_WIFI_SSID_WHITELIST, new HashSet<>(Collections.singleton("\"Home\"")))
+                .commit();
+        Decision d = decide(device().transport(Transport.ETHERNET).ethernetConnected(true).build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.ON_WIFI,
+                Reason.ON_NONMETERED_WIFI, Reason.ON_WHITELISTED_WIFI).inOrder();
+    }
+
+    /** Ethernet counts beside a Wi-Fi (R07), so a Wi-Fi off the list does not pause it. */
+    // SPEC:run-conditions:R07
+    // SPEC:run-conditions:R08
+    @Test
+    public void ethernet_besideUnlistedWifi_runs() {
+        prefs.edit()
+                .putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true)
+                .putStringSet(Constants.PREF_WIFI_SSID_WHITELIST, new HashSet<>(Collections.singleton("\"Home\"")))
+                .commit();
+        Decision d = decide(device().transport(Transport.ETHERNET).ethernetConnected(true)
+                .wifiConnected(true).wifiValidated(true).wifiInfoAvailable(true).wifiSsid("\"Work\"").build());
+        assertThat(d.shouldRun).isTrue();
+        assertThat(d.reasons).contains(Reason.ON_WHITELISTED_WIFI);
+    }
+
+    /** A folder's or device's own Wi-Fi list does not apply on Ethernet either. */
+    // SPEC:run-conditions:R08
+    @Test
+    public void objectConditions_ethernet_wifiListOn_runs() {
+        DeviceConditions ethernet = device().transport(Transport.ETHERNET).ethernetConnected(true).build();
+        DeviceConditions unlistedWifi = device().transport(Transport.WIFI).wifiConnected(true)
+                .wifiValidated(true).wifiInfoAvailable(true).wifiSsid("\"Work\"").build();
+        for (String prefix : new String[]{Constants.PREF_OBJECT_PREFIX_FOLDER, Constants.PREF_OBJECT_PREFIX_DEVICE}) {
+            String obj = prefix + "wired";
+            prefs.edit()
+                    .putBoolean(Constants.DYN_PREF_OBJECT_USE_WIFI_SSID_WHITELIST(obj), true)
+                    .putStringSet(Constants.DYN_PREF_OBJECT_SELECTED_WHITELIST_SSID(obj),
+                            new HashSet<>(Collections.singleton("\"Home\"")))
+                    .commit();
+            assertThat(RunConditionEvaluator.checkObjectConditions(prefs, ethernet, obj)).isTrue();
+            // The list is in force: a Wi-Fi off it still does not count.
+            assertThat(RunConditionEvaluator.checkObjectConditions(prefs, unlistedWifi, obj)).isFalse();
+        }
+    }
+
     /** R07's table, row by row, for a folder's own conditions. */
     // SPEC:run-conditions:R07
     @Test
