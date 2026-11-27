@@ -172,7 +172,7 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 
 **Acceptance:** Unit tests: an unmetered Wi-Fi with a metered default network runs under "unmetered Wi-Fi only"; a metered Wi-Fi does not; a whitelisted name runs, and a hidden name gives the location reason; Ethernet runs with the Wi-Fi list on, for the whole app and for a folder's or device's own list.
 
-**Since:** 2026-11-24 · builder · own words; Ethernet row 2026-11-27 · owner · decision
+**Since:** 2026-11-27 · owner · agreed rewording
 
 ## 4. Acting on the decision
 
