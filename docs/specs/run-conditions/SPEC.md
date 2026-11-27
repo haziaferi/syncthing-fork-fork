@@ -189,11 +189,11 @@ The app learns about network changes from the `CONNECTIVITY_ACTION` broadcast an
 
 ### D-R10 · Explanation of the decision
 
-**Rule:** The explanation keeps its existing reasons and adds one for a Wi-Fi without internet that does not count (R07): "Wi-Fi has no internet and mobile data is not allowed". Its wording is final after the app-wide design pass.
+**Rule:** The explanation keeps its existing reasons and adds one for a Wi-Fi without internet that does not count (R07). Its words are the ones the ui-design spec sets for reasons (section 4, Reasons).
 
 **Acceptance:** A unit test for R07's third row finds the new reason in the decision.
 
-**Since:** 2026-11-24 · builder · own words
+**Since:** 2026-11-27 · owner · wording from the ui-design spec
 
 ## 5. Test plan
 
