@@ -73,7 +73,7 @@ The Wi-Fi check takes the mobile-data preference of the conditions it checks (`P
 - [ ] Write the tests first, each `// SPEC:run-conditions:R07` unless noted:
   - `validatedWifi_runsUnderWifiOnly`.
   - `unvalidatedWifi_mobileAllowed_runs`, and `unvalidatedWifi_noMobileNetwork_runs`.
-  - `unvalidatedWifi_mobileOnButDisallowed_doesNotRun`: the reasons contain `WIFI_WITHOUT_INTERNET` (also `// SPEC:run-conditions:R10`).
+  - `unvalidatedWifi_mobileOnButDisallowed_doesNotRun`: the reasons contain `WIFI_WITHOUT_INTERNET` (also `// SPEC:run-conditions:R10`). R10's wording was made final on 2026-11-27 by the ui-design spec (section 4, Reasons).
   - `ethernet_countsAsUnmeteredWifi`: Ethernet plus a metered Wi-Fi runs under "unmetered Wi-Fi only".
   - `mobileDefault_countsAsMobile`.
   - `objectConditions_unvalidatedWifi_followObjectMobilePref`: the app's mobile pref off, the folder's on, gives the folder met and the app not.

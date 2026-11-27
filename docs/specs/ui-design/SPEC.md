@@ -471,7 +471,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 
 ### D-R21 · Reasons
 
-**Rule:** Each reason in the run-decision explanation has a short form for glance surfaces, at most 48 characters, and a long form for Status, in the words below. They replace every `reason_*` string in `strings.xml:893-930`, and finalise run-conditions R10's reason.
+**Rule:** Each reason in the run-decision explanation has a short form for glance surfaces, at most 48 characters, and a long form for Status, in the words below. While Syncthing runs, the explanation shows the reasons that let it run; while it is paused, the reasons that stop it. They replace every `reason_*` string in `strings.xml:893-930`, and finalise run-conditions R10's reason.
 
 **Why:** Today's reasons repeat "Syncthing is …", use "WiFi" and "whitelisted", and one names a setting that does not exist ("Run on selected WiFi networks").
 
@@ -496,11 +496,18 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 | Wi-Fi not selected | "Not one of your Wi-Fi networks" | "This Wi-Fi isn't one of your selected Wi-Fi networks." |
 | location off (needs attention, action "Turn on location") | "Can't read the Wi-Fi name" | "You run Syncthing on selected Wi-Fi networks only, and Android hides the Wi-Fi name while location is off." |
 | flight mode, allowed | "Flight mode" | "Running in flight mode, which you allowed." |
+| on mobile data, allowed | "On mobile data, which you allowed" | "Running on mobile data, which you allowed." |
+| roaming allowed | "Roaming allowed" | "You allowed mobile data while roaming too." |
+| not roaming | "Not roaming" | "The phone isn't roaming." |
+| on Wi-Fi, allowed | "On Wi-Fi" | "Running on Wi-Fi or Ethernet, which you allowed." |
+| metered Wi-Fi allowed | "Metered Wi-Fi allowed" | "You allowed metered Wi-Fi too." |
+| unmetered Wi-Fi | "Wi-Fi is unmetered" | "This Wi-Fi is unmetered." |
+| allowed Wi-Fi network | "On an allowed Wi-Fi network" | "This Wi-Fi network is allowed." |
 | monitor not loaded (fault, action "Restart app") | "Run conditions not loaded" | "Run conditions didn't load. Restart the app; if this comes back, report it." |
 
-**Acceptance:** A unit test finds every short form at 48 characters or fewer, and the run decision for each case returns its row's words.
+**Acceptance:** A unit test finds every short form at 48 characters or fewer, in every language the app ships, and the run decision for each case returns its row's words: the reasons that let it run while it runs, the reasons that stop it while it is paused.
 
-**Since:** 2026-11-25 · owner · agreed rewording
+**Since:** 2026-11-27 · owner · allowed reasons added
 
 ### D-R22 · Help for beginners
 
@@ -880,7 +887,7 @@ The app grew two visual systems: Compose screens on Material 3 with dynamic colo
 - R18 · Terms: A CI check finds none of the Not column in the fork-owned string files (R41).
 - R19 · Paths and long values: At 320 dp and 200% text, the backup screen's paths wrap only at "/" or spaces.
 - R20 · Run-state words: A unit test maps each run state to its word, and the notification, tile and widget code take the word from that one mapping.
-- R21 · Reasons: A unit test finds every short form at 48 characters or fewer, and the run decision for each case returns its row's words.
+- R21 · Reasons: A unit test finds every short form at 48 characters or fewer, in every language the app ships, and the run decision for each case returns its row's words: the reasons that let it run while it runs, the reasons that stop it while it is paused.
 - R22 · Help for beginners: Each step of "Where to begin" opens its screen; each info icon opens its glossary entry; both screens work by D-pad.
 - R23 · Status destination: With Syncthing paused by a rule, Status shows the card with the word, the long reason and "Run anyway" above the details.
 - R24 · Persistent notification: In each R20 state the notification shows its word, text and actions as the rule says; the locked screen shows the word only.
