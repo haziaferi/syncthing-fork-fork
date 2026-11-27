@@ -532,4 +532,19 @@ public class RunConditionEvaluatorTest {
         assertThat(RunConditionEvaluator.checkObjectConditions(prefs,
                 device().transport(Transport.NO_ACTIVE_NETWORK).build(), obj)).isFalse();
     }
+
+    @Test
+    public void onMobileData_trueOnlyOnMobileTransport() {
+        assertThat(decide(device().transport(Transport.MOBILE).build()).onMobileData).isTrue();
+        assertThat(decide(wifi()).onMobileData).isFalse();
+        assertThat(decide(device().build()).onMobileData).isFalse();
+    }
+
+    @Test
+    public void onMobileData_setOnEarlyReturns() {
+        prefs.edit()
+                .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP)
+                .commit();
+        assertThat(decide(device().transport(Transport.MOBILE).build()).onMobileData).isTrue();
+    }
 }

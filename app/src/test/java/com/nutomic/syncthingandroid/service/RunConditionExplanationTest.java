@@ -48,7 +48,7 @@ public class RunConditionExplanationTest {
             "reason_force_start", "reason_force_stop", "reason_mobile_data_disallowed",
             "reason_not_charging", "reason_not_on_battery_power", "reason_not_on_mobile_data",
             "reason_not_while_auto_sync_data_disabled", "reason_not_while_power_saving",
-            "reason_on_mobile_data"));
+            "reason_on_mobile_data", "reason_run_condition_monitor_not_instantiated"));
 
     @Test
     public void everyReason_hasTheLegacyLineBreak() {
