@@ -68,5 +68,21 @@ class ForkStringsItalianTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         assertThat(context.getString(RunState.PAUSED_BY_RULES.word)).isEqualTo("In pausa per le tue regole")
         assertThat(context.getString(StateAction.RUN_ANYWAY.label)).isEqualTo("Esegui comunque")
+        assertThat(context.getString(RunState.SYNCING.word)).isEqualTo("Sincronizzazione in corso")
+        assertThat(RunReasons.shortText(context.resources, Reason.NOT_ON_BATTERY_POWER)).isEqualTo("Telefono in carica")
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    @Config(qualifiers = "it")
+    fun italianLongGaps_useHoursAndDays() {
+        val res = ApplicationProvider.getApplicationContext<Context>().resources
+        val expected = mapOf(1 to "1 minuto", 60 to "1 ora", 120 to "2 ore", 1440 to "1 giorno", 2880 to "2 giorni")
+        for ((minutes, duration) in expected) {
+            val d = Decision(false, listOf(Reason.NOT_WITHIN_TIME_FRAME), false, minutes)
+            assertWithMessage("$minutes minutes")
+                .that(RunReasons.longText(res, Reason.NOT_WITHIN_TIME_FRAME, d))
+                .isEqualTo("Esegui Syncthing secondo una pianificazione. L'ultima esecuzione è stata $duration fa.")
+        }
     }
 }
