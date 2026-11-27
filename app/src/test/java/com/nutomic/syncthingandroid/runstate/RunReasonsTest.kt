@@ -110,10 +110,46 @@ class RunReasonsTest {
     fun shown_whileRunningOnWifi_isTheAllowedReasons() {
         val d = decide(wifi())
         assertThat(d.shouldRun).isTrue()
-        assertThat(RunReasons.shown(d))
+        val shown = RunReasons.shown(d, RunState.RUNNING)
+        assertThat(shown).containsExactly(Reason.ON_WIFI, Reason.ON_NONMETERED_WIFI).inOrder()
+        assertThat(shown).doesNotContain(Reason.MOBILE_DATA_DISALLOWED)
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_runningOnSelectedWifi_includesAllowedNetwork() {
+        prefs.edit()
+            .putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true)
+            .putStringSet(Constants.PREF_WIFI_SSID_WHITELIST, setOf("\"Home\""))
+            .commit()
+        val d = decide(wifi())
+        assertThat(d.shouldRun).isTrue()
+        assertThat(RunReasons.shown(d, RunState.RUNNING))
             .containsExactly(Reason.ON_WIFI, Reason.ON_NONMETERED_WIFI, Reason.ON_WHITELISTED_WIFI)
             .inOrder()
-        assertThat(RunReasons.shown(d)).doesNotContain(Reason.MOBILE_DATA_DISALLOWED)
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_runningOnEthernet_isOnWifiOnly() {
+        val d = decide(device().transport(Transport.ETHERNET).ethernetConnected(true).build())
+        assertThat(d.shouldRun).isTrue()
+        assertThat(RunReasons.shown(d, RunState.RUNNING)).containsExactly(Reason.ON_WIFI)
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_runningAfterRoamingBlocked_isTheWifiBranchOnly() {
+        prefs.edit().putBoolean(Constants.PREF_RUN_ON_MOBILE_DATA, true).commit()
+        val d = decide(
+            device().transport(Transport.MOBILE).mobileConnected(true).roaming(true)
+                .wifiConnected(true).wifiValidated(true)
+                .wifiInfoAvailable(true).wifiSsid("\"Home\"").build()
+        )
+        assertThat(d.shouldRun).isTrue()
+        val shown = RunReasons.shown(d, RunState.RUNNING)
+        assertThat(shown).doesNotContain(Reason.ON_MOBILE_DATA)
+        assertThat(shown).containsExactly(Reason.ON_WIFI, Reason.ON_NONMETERED_WIFI).inOrder()
     }
 
     @Test
@@ -121,10 +157,23 @@ class RunReasonsTest {
         prefs.edit().putBoolean(Constants.PREF_RUN_ON_WIFI, false).commit()
         val d = decide(device().transport(Transport.MOBILE).mobileConnected(true).build())
         assertThat(d.shouldRun).isFalse()
-        val shown = RunReasons.shown(d)
+        val shown = RunReasons.shown(d, RunState.PAUSED_BY_RULES)
         assertThat(shown).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.WIFI_DISALLOWED).inOrder()
         assertThat(shown.map { RunReasons.shortText(context.resources, it) })
             .containsExactly("On mobile data", "Wi-Fi not allowed").inOrder()
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_pausedOnWifi_dropsMobileDataDisallowed() {
+        prefs.edit().putBoolean(Constants.PREF_RUN_ON_METERED_WIFI, false).commit()
+        val d = decide(
+            device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(true)
+                .wifiMetered(true).wifiInfoAvailable(true).wifiSsid("\"Home\"").build()
+        )
+        assertThat(d.shouldRun).isFalse()
+        assertThat(RunReasons.shown(d, RunState.PAUSED_BY_RULES))
+            .containsExactly(Reason.NOT_NONMETERED_WIFI)
     }
 
     @Test
@@ -132,7 +181,7 @@ class RunReasonsTest {
         prefs.edit().putBoolean(Constants.PREF_RUN_IN_FLIGHT_MODE, true).commit()
         val d = decide(device().build())
         assertThat(d.shouldRun).isTrue()
-        assertThat(RunReasons.shown(d)).containsExactly(Reason.ON_FLIGHT_MODE)
+        assertThat(RunReasons.shown(d, RunState.RUNNING)).containsExactly(Reason.ON_FLIGHT_MODE)
     }
 
     @Test
@@ -140,19 +189,69 @@ class RunReasonsTest {
         prefs.edit()
             .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP).commit()
         val d = decide(wifi())
-        assertThat(RunReasons.shown(d)).containsExactly(Reason.FORCE_STOP)
+        assertThat(RunReasons.shown(d, RunState.PAUSED_BY_YOU)).containsExactly(Reason.FORCE_STOP)
         assertThat(RunReasons.shortText(context.resources, Reason.FORCE_STOP)).isEqualTo("You chose Pause")
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_pausedByYou_isOnlyYouChosePause() {
+        val d = decide(wifi())
+        assertThat(d.shouldRun).isTrue()
+        assertThat(RunReasons.shown(d, RunState.PAUSED_BY_YOU)).containsExactly(Reason.FORCE_STOP)
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_runningAnyway_isOnlyYouChoseRunAnyway() {
+        val d = decide(device().build())
+        assertThat(d.shouldRun).isFalse()
+        assertThat(RunReasons.shown(d, RunState.RUNNING_ANYWAY)).containsExactly(Reason.FORCE_START)
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_startingOrStopped_isEmpty() {
+        val run = decide(wifi())
+        val stop = decide(device().build())
+        assertThat(run.shouldRun).isTrue()
+        assertThat(stop.shouldRun).isFalse()
+        for (state in listOf(RunState.STARTING, RunState.STOPPED)) {
+            for (d in listOf(run, stop)) {
+                assertWithMessage("$state, shouldRun ${d.shouldRun}")
+                    .that(RunReasons.shown(d, state)).isEmpty()
+            }
+        }
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_runningWithStaleStopDecision_isEmpty() {
+        val d = decide(device().build())
+        assertThat(d.shouldRun).isFalse()
+        assertThat(RunReasons.shown(d, RunState.RUNNING)).isEmpty()
+        assertThat(RunReasons.shown(d, RunState.SYNCING)).isEmpty()
+    }
+
+    // SPEC:ui-design:R21
+    @Test
+    fun shown_pausedByRulesWithStaleRunDecision_isEmpty() {
+        val d = decide(wifi())
+        assertThat(d.shouldRun).isTrue()
+        assertThat(RunReasons.shown(d, RunState.PAUSED_BY_RULES)).isEmpty()
     }
 
     // SPEC:run-conditions:R10
     @Test
     fun shown_wifiWithoutInternet_isTheR07Reason() {
         val d = decide(
-            device().transport(Transport.WIFI).wifiConnected(true).wifiValidated(false)
-                .mobileConnected(true).wifiInfoAvailable(true).wifiSsid("\"Home\"").build()
+            device().transport(Transport.MOBILE).mobileConnected(true)
+                .wifiConnected(true).wifiValidated(false)
+                .wifiInfoAvailable(true).wifiSsid("\"Home\"").build()
         )
         assertThat(d.shouldRun).isFalse()
-        assertThat(RunReasons.shown(d)).contains(Reason.WIFI_WITHOUT_INTERNET)
+        assertThat(RunReasons.shown(d, RunState.PAUSED_BY_RULES))
+            .containsExactly(Reason.WIFI_WITHOUT_INTERNET)
         assertThat(RunReasons.shortText(context.resources, Reason.WIFI_WITHOUT_INTERNET))
             .isEqualTo("Wi-Fi has no internet; mobile data not allowed")
     }

@@ -547,4 +547,33 @@ public class RunConditionEvaluatorTest {
                 .commit();
         assertThat(decide(device().transport(Transport.MOBILE).build()).onMobileData).isTrue();
     }
+
+    @Test
+    public void wifiListInUse_followsThePref() {
+        assertThat(decide(wifi()).wifiListInUse).isFalse();
+        prefs.edit()
+                .putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true)
+                .putStringSet(Constants.PREF_WIFI_SSID_WHITELIST, Collections.singleton("\"Home\""))
+                .commit();
+        assertThat(decide(wifi()).wifiListInUse).isTrue();
+        // Set on an early return too.
+        prefs.edit()
+                .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP)
+                .commit();
+        assertThat(decide(wifi()).wifiListInUse).isTrue();
+    }
+
+    @Test
+    public void onEthernet_trueOnlyOnEthernetTransport() {
+        assertThat(decide(device().transport(Transport.ETHERNET).ethernetConnected(true).build()).onEthernet)
+                .isTrue();
+        assertThat(decide(wifi()).onEthernet).isFalse();
+        assertThat(decide(device().transport(Transport.MOBILE).build()).onEthernet).isFalse();
+        assertThat(decide(device().build()).onEthernet).isFalse();
+        prefs.edit()
+                .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_START)
+                .commit();
+        assertThat(decide(device().transport(Transport.ETHERNET).ethernetConnected(true).build()).onEthernet)
+                .isTrue();
+    }
 }

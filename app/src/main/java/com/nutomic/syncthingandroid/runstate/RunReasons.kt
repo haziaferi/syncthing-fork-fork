@@ -53,14 +53,43 @@ object RunReasons {
         )
     }
 
+    private val forced = setOf(Reason.FORCE_START, Reason.FORCE_STOP)
+
+    /** Wi-Fi details that say nothing on Ethernet; "On Wi-Fi" stays, as it says "Wi-Fi or Ethernet". */
+    private val wifiOnly = setOf(Reason.ON_NONMETERED_WIFI, Reason.ON_METERED_NONMETERED_WIFI, Reason.ON_WHITELISTED_WIFI)
+
     /**
-     * The reasons the explanation shows, in the decision's order: while Syncthing runs, those that
-     * let it run; while it is paused, the others. "Mobile data not allowed" shows only while the
-     * phone is on mobile data.
+     * The reasons the explanation shows in [state], in the decision's order (SPEC:ui-design:R21).
+     * A forced state shows only the user's choice. Running shows the branch that let Syncthing
+     * run; paused by rules shows the reasons that stop it. A decision that disagrees with the
+     * state is stale (for example during the stop delay) and shows nothing.
      */
-    fun shown(decision: Decision): List<Reason> = decision.reasons.filter {
-        words(it).letsItRun == decision.shouldRun &&
-            (it != Reason.MOBILE_DATA_DISALLOWED || decision.onMobileData)
+    fun shown(decision: Decision, state: RunState): List<Reason> = when (state) {
+        RunState.PAUSED_BY_YOU -> listOf(Reason.FORCE_STOP)
+        RunState.RUNNING_ANYWAY -> listOf(Reason.FORCE_START)
+        RunState.STARTING, RunState.STOPPED -> emptyList()
+        RunState.RUNNING, RunState.SYNCING -> if (decision.shouldRun) letItRun(decision) else emptyList()
+        RunState.PAUSED_BY_RULES -> if (decision.shouldRun) emptyList() else stopIt(decision)
+    }
+
+    /** The trailing run of reasons that let it run: the branch of the decision that succeeded. */
+    private fun letItRun(decision: Decision): List<Reason> =
+        decision.reasons.takeLastWhile { words(it).letsItRun }.filter {
+            it !in forced &&
+                (it != Reason.ON_WHITELISTED_WIFI || decision.wifiListInUse) &&
+                (it !in wifiOnly || !decision.onEthernet)
+        }
+
+    /**
+     * The reasons that stop it. "Mobile data not allowed" shows only while the phone is on mobile
+     * data, and not with "Wi-Fi has no internet", which already says so.
+     */
+    private fun stopIt(decision: Decision): List<Reason> {
+        val wifiWithoutInternet = Reason.WIFI_WITHOUT_INTERNET in decision.reasons
+        return decision.reasons.filter {
+            !words(it).letsItRun && it !in forced &&
+                (it != Reason.MOBILE_DATA_DISALLOWED || (decision.onMobileData && !wifiWithoutInternet))
+        }
     }
 
     fun shortText(res: Resources, reason: Reason): String = res.getString(words(reason).short)

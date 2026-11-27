@@ -113,6 +113,10 @@ public final class RunConditionEvaluator {
         public final int minutesSinceLastRun;
         /** True when the device is on mobile data at the time of the decision. */
         public final boolean onMobileData;
+        /** True when the user runs Syncthing on selected Wi-Fi networks only. */
+        public final boolean wifiListInUse;
+        /** True when the device is on Ethernet at the time of the decision. */
+        public final boolean onEthernet;
 
         public Decision(boolean shouldRun, List<Reason> reasons, boolean timeConditionMatch, int minutesSinceLastRun) {
             this(shouldRun, reasons, timeConditionMatch, minutesSinceLastRun, false);
@@ -120,11 +124,18 @@ public final class RunConditionEvaluator {
 
         public Decision(boolean shouldRun, List<Reason> reasons, boolean timeConditionMatch, int minutesSinceLastRun,
                         boolean onMobileData) {
+            this(shouldRun, reasons, timeConditionMatch, minutesSinceLastRun, onMobileData, false, false);
+        }
+
+        public Decision(boolean shouldRun, List<Reason> reasons, boolean timeConditionMatch, int minutesSinceLastRun,
+                        boolean onMobileData, boolean wifiListInUse, boolean onEthernet) {
             this.shouldRun = shouldRun;
             this.reasons = Collections.unmodifiableList(new ArrayList<>(reasons));
             this.timeConditionMatch = timeConditionMatch;
             this.minutesSinceLastRun = minutesSinceLastRun;
             this.onMobileData = onMobileData;
+            this.wifiListInUse = wifiListInUse;
+            this.onEthernet = onEthernet;
         }
     }
 
@@ -148,6 +159,8 @@ public final class RunConditionEvaluator {
                                   long nowElapsedMs, boolean timeConditionMatch) {
         List<Reason> reasons = new ArrayList<>();
         boolean onMobileData = device.transport == Transport.MOBILE;
+        boolean onEthernet = device.transport == Transport.ETHERNET;
+        boolean wifiListInUse = prefs.getBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, false);
 
         int prefBtnStateForceStartStop = prefs.getInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_NO_FORCE_START_STOP);
         boolean prefRespectPowerSaving = prefs.getBoolean(Constants.PREF_RESPECT_BATTERY_SAVING, true);
@@ -158,10 +171,10 @@ public final class RunConditionEvaluator {
         switch (prefBtnStateForceStartStop) {
             case Constants.BTNSTATE_FORCE_START:
                 reasons.add(Reason.FORCE_START);
-                return new Decision(true, reasons, timeConditionMatch, 0, onMobileData);
+                return new Decision(true, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
             case Constants.BTNSTATE_FORCE_STOP:
                 reasons.add(Reason.FORCE_STOP);
-                return new Decision(false, reasons, timeConditionMatch, 0, onMobileData);
+                return new Decision(false, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
         }
 
         // Time schedule: we are inside a run frame if the last run was more than one sleep interval ago.
@@ -172,23 +185,23 @@ public final class RunConditionEvaluator {
         if (prefRunOnTimeSchedule && !timeConditionMatch) {
             int minutes = (int) (nowElapsedMs - lastRunTime) / (60 * 1000);
             reasons.add(Reason.NOT_WITHIN_TIME_FRAME);
-            return new Decision(false, reasons, timeConditionMatch, minutes, onMobileData);
+            return new Decision(false, reasons, timeConditionMatch, minutes, onMobileData, wifiListInUse, onEthernet);
         }
 
         Check check = checkPowerSource(prefs, device, Constants.PREF_POWER_SOURCE);
         if (!check.met) {
             reasons.add(check.reason);
-            return new Decision(false, reasons, timeConditionMatch, 0, onMobileData);
+            return new Decision(false, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
         }
 
         if (prefRespectPowerSaving && device.powerSaving) {
             reasons.add(Reason.NOT_WHILE_POWER_SAVING);
-            return new Decision(false, reasons, timeConditionMatch, 0, onMobileData);
+            return new Decision(false, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
         }
 
         if (prefRespectMasterSync && !device.masterSyncEnabled) {
             reasons.add(Reason.NOT_WHILE_AUTO_SYNC_DATA_DISABLED);
-            return new Decision(false, reasons, timeConditionMatch, 0, onMobileData);
+            return new Decision(false, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
         }
 
         check = checkMobileData(prefs, device, Constants.PREF_RUN_ON_MOBILE_DATA);
@@ -197,7 +210,7 @@ public final class RunConditionEvaluator {
             check = checkRoaming(prefs, device, Constants.PREF_RUN_ON_ROAMING);
             reasons.add(check.reason);
             if (check.met) {
-                return new Decision(true, reasons, timeConditionMatch, 0, onMobileData);
+                return new Decision(true, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
             }
         }
 
@@ -211,17 +224,17 @@ public final class RunConditionEvaluator {
                         Constants.PREF_USE_WIFI_SSID_WHITELIST, Constants.PREF_WIFI_SSID_WHITELIST);
                 reasons.add(check.reason);
                 if (check.met) {
-                    return new Decision(true, reasons, timeConditionMatch, 0, onMobileData);
+                    return new Decision(true, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
                 }
             }
         }
 
         if (prefRunInFlightMode && device.transport == Transport.NO_ACTIVE_NETWORK) {
             reasons.add(Reason.ON_FLIGHT_MODE);
-            return new Decision(true, reasons, timeConditionMatch, 0, onMobileData);
+            return new Decision(true, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
         }
 
-        return new Decision(false, reasons, timeConditionMatch, 0, onMobileData);
+        return new Decision(false, reasons, timeConditionMatch, 0, onMobileData, wifiListInUse, onEthernet);
     }
 
     /**
