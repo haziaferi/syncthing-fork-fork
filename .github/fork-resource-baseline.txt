@@ -1,0 +1,16 @@
+colour-literal	app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsCustomCertificateScreen.kt	2
+colour-literal	app/src/main/res/layout/fragment_status.xml	7
+colour-literal	app/src/main/res/layout/widget_toolbar.xml	4
+font-size	app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingScaffold.kt	2
+text-size	app/src/main/res/layout/activity_log.xml	1
+text-size	app/src/main/res/layout/activity_photo_shoot_intro.xml	2
+text-size	app/src/main/res/layout/activity_share.xml	1
+text-size	app/src/main/res/layout/activity_sync_conditions.xml	1
+text-size	app/src/main/res/layout/fragment_external_versioning.xml	1
+text-size	app/src/main/res/layout/fragment_qr_scanner.xml	1
+text-size	app/src/main/res/layout/fragment_simple_versioning.xml	2
+text-size	app/src/main/res/layout/fragment_staggered_versioning.xml	2
+text-size	app/src/main/res/layout/fragment_trashcan_versioning.xml	1
+text-size	app/src/main/res/layout/item_folder_list.xml	2
+text-size	app/src/main/res/layout/item_tip.xml	2
+text-size	app/src/main/res/layout/widget_toolbar.xml	1

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brand colours for the XML screens (light). Values come from BrandScheme.xmlRoles(false);
+     values-night/colors_fork.xml holds the dark ones. -->
+<resources>
+    <color name="fork_primary">#004872</color>
+    <color name="fork_on_primary">#ffffff</color>
+    <color name="fork_primary_container">#397299</color>
+    <color name="fork_on_primary_container">#ffffff</color>
+    <color name="fork_surface">#f6fafd</color>
+    <color name="fork_on_surface">#0b2230</color>
+    <color name="fork_on_surface_variant">#485861</color>
+    <color name="fork_background">#f6fafd</color>
+    <color name="fork_error">#b00014</color>
+    <color name="fork_on_error">#ffffff</color>
+    <color name="fork_outline">#4d5359</color>
+    <color name="fork_secondary">#283845</color>
+    <color name="fork_on_secondary">#ffffff</color>
+    <color name="fork_secondary_container">#5e6f7d</color>
+    <color name="fork_on_secondary_container">#ffffff</color>
+    <color name="fork_tertiary">#3b3151</color>
+    <color name="fork_on_tertiary">#ffffff</color>
+    <color name="fork_surface_variant">#dde3ea</color>
+    <color name="fork_outline_variant">#686e74</color>
+    <color name="fork_on_background">#0b2230</color>
+    <color name="fork_surface_container_lowest">#ffffff</color>
+    <color name="fork_surface_container_low">#f1f4f9</color>
+    <color name="fork_surface_container">#e5e8ed</color>
+    <color name="fork_surface_container_high">#dadde2</color>
+    <color name="fork_surface_container_highest">#cfd2d7</color>
+    <color name="fork_inverse_surface">#2d3135</color>
+    <color name="fork_inverse_on_surface">#eef1f6</color>
+    <color name="fork_inverse_primary">#96cdf8</color>
+    <color name="fork_tertiary_container">#74678b</color>
+    <color name="fork_on_tertiary_container">#ffffff</color>
+    <color name="fork_error_container">#cf2c27</color>
+    <color name="fork_on_error_container">#ffffff</color>
+    <color name="fork_surface_bright">#f7f9ff</color>
+    <color name="fork_surface_dim">#c3c7cc</color>
+    <color name="fork_primary_fixed">#397299</color>
+    <color name="fork_primary_fixed_dim">#195a7f</color>
+    <color name="fork_on_primary_fixed">#ffffff</color>
+    <color name="fork_on_primary_fixed_variant">#ffffff</color>
+    <color name="fork_secondary_fixed">#5e6f7d</color>
+    <color name="fork_secondary_fixed_dim">#465764</color>
+    <color name="fork_on_secondary_fixed">#ffffff</color>
+    <color name="fork_on_secondary_fixed_variant">#ffffff</color>
+    <color name="fork_tertiary_fixed">#74678b</color>
+    <color name="fork_tertiary_fixed_dim">#5b4f71</color>
+    <color name="fork_on_tertiary_fixed">#ffffff</color>
+    <color name="fork_on_tertiary_fixed_variant">#ffffff</color>
+</resources>

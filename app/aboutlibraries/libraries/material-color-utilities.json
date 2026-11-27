@@ -1,0 +1,18 @@
+{
+  "uniqueId": "com.nutomic.syncthingandroid.theme.mcu",
+  "artifactVersion": "5519f65a77",
+  "name": "Material Color Utilities",
+  "description": "Colour science behind the wallpaper colour scheme. The Java sources are copied into this app (package com.nutomic.syncthingandroid.theme.mcu) from commit 5519f65a77.",
+  "website": "https://github.com/material-foundation/material-color-utilities",
+  "developers": [
+    {
+      "name": "Google LLC"
+    }
+  ],
+  "scm": {
+    "url": "https://github.com/material-foundation/material-color-utilities"
+  },
+  "licenses": [
+    "Apache-2.0"
+  ]
+}

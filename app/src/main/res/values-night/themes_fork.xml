@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Night override of the upstream toolbar overlay: the dark-mode primary (#68ccff) is too light
+     for white toolbar text (about 1.8:1), so text and icons use fork_on_primary (10.3:1). -->
+<resources>
+    <style name="ThemeOverlay.Syncthing.Toolbar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:windowBackground">@null</item>
+        <item name="colorAccent">@color/fork_on_primary</item>
+        <item name="android:textColorPrimary">@color/fork_on_primary</item>
+        <item name="android:textColorSecondary">@color/fork_on_primary</item>
+        <item name="colorControlNormal">@color/fork_on_primary</item>
+        <item name="actionMenuTextColor">@color/fork_on_primary</item>
+    </style>
+
+    <!-- The same night fix for the fork's own toolbar overlay (values/themes_fork.xml). -->
+    <style name="ThemeOverlay.SyncthingFork.Toolbar" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <item name="android:windowBackground">@null</item>
+        <item name="colorAccent">@color/fork_on_primary</item>
+        <item name="android:textColorPrimary">@color/fork_on_primary</item>
+        <item name="android:textColorSecondary">@color/fork_on_primary</item>
+        <item name="colorControlNormal">@color/fork_on_primary</item>
+        <item name="actionMenuTextColor">@color/fork_on_primary</item>
+    </style>
+</resources>

@@ -65,3 +65,8 @@ Not a source of current rules: `SPEC.md` is. One line per change, newest at the 
 - 2026-11-25 · R38 · changed · test plan covers R41 and R43 · owner
 - 2026-11-25 · R38 · changed · note on spec-blind code citations · builder
 - 2026-11-25 · R38 · changed · citation form SPEC:ui-design:Rnn, speccheck reads it · owner
+- 2026-11-25 · R04 · changed · vendored Material Color Utilities commit named in the evidence · owner
+- 2026-11-25 · R06 · changed · icons named as Icons.Outlined from material-icons-extended · owner
+- 2026-11-25 · R11 · changed · Material Icons outlined, not Material Symbols · owner
+- 2026-11-25 · R38 · changed · resource check named Fork checks / resources · owner
+- 2026-11-26 · R05 · changed · primary #004872 / #68ccff, 7:1 on dialog backgrounds; was #005b86 / #39a8e7 · owner

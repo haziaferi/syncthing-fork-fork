@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 theme for the XML screens. Colours map to the brand palette in colors_fork.xml;
+     the DayNight parents switch it to the dark values under values-night. -->
+<resources>
+
+    <style name="Theme.SyncthingFork" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/fork_primary</item>
+        <item name="colorOnPrimary">@color/fork_on_primary</item>
+        <item name="colorPrimaryContainer">@color/fork_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/fork_on_primary_container</item>
+        <item name="colorSurface">@color/fork_surface</item>
+        <item name="colorOnSurface">@color/fork_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/fork_on_surface_variant</item>
+        <item name="colorError">@color/fork_error</item>
+        <item name="colorOnError">@color/fork_on_error</item>
+        <item name="colorOutline">@color/fork_outline</item>
+        <item name="android:colorBackground">@color/fork_background</item>
+        <item name="colorAccent">@color/fork_primary</item>
+        <item name="colorSecondary">@color/fork_secondary</item>
+        <item name="colorOnSecondary">@color/fork_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/fork_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/fork_on_secondary_container</item>
+        <item name="colorTertiary">@color/fork_tertiary</item>
+        <item name="colorOnTertiary">@color/fork_on_tertiary</item>
+        <item name="colorSurfaceVariant">@color/fork_surface_variant</item>
+        <item name="colorOutlineVariant">@color/fork_outline_variant</item>
+        <item name="colorOnBackground">@color/fork_on_background</item>
+        <item name="colorSurfaceContainerLowest">@color/fork_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/fork_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/fork_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/fork_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/fork_surface_container_highest</item>
+        <item name="colorSurfaceInverse">@color/fork_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/fork_inverse_on_surface</item>
+        <item name="colorPrimaryInverse">@color/fork_inverse_primary</item>
+        <item name="colorTertiaryContainer">@color/fork_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/fork_on_tertiary_container</item>
+        <item name="colorErrorContainer">@color/fork_error_container</item>
+        <item name="colorOnErrorContainer">@color/fork_on_error_container</item>
+        <item name="colorSurfaceBright">@color/fork_surface_bright</item>
+        <item name="colorSurfaceDim">@color/fork_surface_dim</item>
+        <item name="colorPrimaryFixed">@color/fork_primary_fixed</item>
+        <item name="colorPrimaryFixedDim">@color/fork_primary_fixed_dim</item>
+        <item name="colorOnPrimaryFixed">@color/fork_on_primary_fixed</item>
+        <item name="colorOnPrimaryFixedVariant">@color/fork_on_primary_fixed_variant</item>
+        <item name="colorSecondaryFixed">@color/fork_secondary_fixed</item>
+        <item name="colorSecondaryFixedDim">@color/fork_secondary_fixed_dim</item>
+        <item name="colorOnSecondaryFixed">@color/fork_on_secondary_fixed</item>
+        <item name="colorOnSecondaryFixedVariant">@color/fork_on_secondary_fixed_variant</item>
+        <item name="colorTertiaryFixed">@color/fork_tertiary_fixed</item>
+        <item name="colorTertiaryFixedDim">@color/fork_tertiary_fixed_dim</item>
+        <item name="colorOnTertiaryFixed">@color/fork_on_tertiary_fixed</item>
+        <item name="colorOnTertiaryFixedVariant">@color/fork_on_tertiary_fixed_variant</item>
+
+        <!-- Upstream XML screens keep their AppCompat widgets (a <Button> stays an AppCompatButton,
+             not a filled MaterialButton) until they are rebuilt (spec R02). @null overrides Material's
+             inflater and makes AppCompat construct its own directly; a class name here would be looked
+             up by reflection, which fails in release because R8 renames AppCompatViewInflater. -->
+        <item name="viewInflaterClass">@null</item>
+        <item name="tabStyle">@style/Widget.SyncthingFork.TabLayout.OnToolbar</item>
+        <item name="android:textColorPrimary">@color/fork_text_primary</item>
+        <item name="android:textColorSecondary">@color/fork_text_secondary</item>
+
+        <item name="textAppearanceListItemPrimary">@style/TextAppearance.Syncthing.ListItemPrimary</item>
+        <item name="textAppearanceListItemSecondary">@style/TextAppearance.Syncthing.ListItemSecondary</item>
+        <item name="textAppearanceListItemSmall">@style/TextAppearance.Syncthing.ListItemSmall</item>
+
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:listViewStyle">@style/Widget.Syncthing.ListView</item>
+        <item name="android:listDivider">@drawable/list_divider_inset</item>
+        <item name="drawerArrowStyle">@style/Widget.Syncthing.DrawerArrowToggle</item>
+
+        <item name="actionBarSize">@dimen/abc_action_bar_default_height_material</item>
+
+        <item name="spinnerStyle">@style/Widget.AppCompat.Spinner.Underlined</item>
+        <item name="android:spinnerItemStyle">@style/Widget.Syncthing.TextView.SpinnerItem</item>
+        <item name="alertDialogTheme">@style/Theme.SyncthingFork.Dialog</item>
+
+        <item name="android:fitsSystemWindows">true</item>
+    </style>
+
+    <style name="Theme.SyncthingFork.Dialog" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="colorPrimary">@color/fork_primary</item>
+        <item name="colorOnPrimary">@color/fork_on_primary</item>
+        <item name="colorSurface">@color/fork_surface</item>
+        <item name="colorOnSurface">@color/fork_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/fork_on_surface_variant</item>
+        <item name="colorError">@color/fork_error</item>
+        <item name="colorOnError">@color/fork_on_error</item>
+        <item name="colorOutline">@color/fork_outline</item>
+        <item name="colorPrimaryContainer">@color/fork_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/fork_on_primary_container</item>
+        <item name="android:colorBackground">@color/fork_background</item>
+        <item name="colorAccent">@color/fork_primary</item>
+        <item name="colorSecondary">@color/fork_secondary</item>
+        <item name="colorOnSecondary">@color/fork_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/fork_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/fork_on_secondary_container</item>
+        <item name="colorTertiary">@color/fork_tertiary</item>
+        <item name="colorOnTertiary">@color/fork_on_tertiary</item>
+        <item name="colorSurfaceVariant">@color/fork_surface_variant</item>
+        <item name="colorOutlineVariant">@color/fork_outline_variant</item>
+        <item name="colorOnBackground">@color/fork_on_background</item>
+        <item name="colorSurfaceContainerLowest">@color/fork_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/fork_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/fork_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/fork_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/fork_surface_container_highest</item>
+        <item name="colorSurfaceInverse">@color/fork_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/fork_inverse_on_surface</item>
+        <item name="colorPrimaryInverse">@color/fork_inverse_primary</item>
+        <item name="colorTertiaryContainer">@color/fork_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/fork_on_tertiary_container</item>
+        <item name="colorErrorContainer">@color/fork_error_container</item>
+        <item name="colorOnErrorContainer">@color/fork_on_error_container</item>
+        <item name="colorSurfaceBright">@color/fork_surface_bright</item>
+        <item name="colorSurfaceDim">@color/fork_surface_dim</item>
+        <item name="colorPrimaryFixed">@color/fork_primary_fixed</item>
+        <item name="colorPrimaryFixedDim">@color/fork_primary_fixed_dim</item>
+        <item name="colorOnPrimaryFixed">@color/fork_on_primary_fixed</item>
+        <item name="colorOnPrimaryFixedVariant">@color/fork_on_primary_fixed_variant</item>
+        <item name="colorSecondaryFixed">@color/fork_secondary_fixed</item>
+        <item name="colorSecondaryFixedDim">@color/fork_secondary_fixed_dim</item>
+        <item name="colorOnSecondaryFixed">@color/fork_on_secondary_fixed</item>
+        <item name="colorOnSecondaryFixedVariant">@color/fork_on_secondary_fixed_variant</item>
+        <item name="colorTertiaryFixed">@color/fork_tertiary_fixed</item>
+        <item name="colorTertiaryFixedDim">@color/fork_tertiary_fixed_dim</item>
+        <item name="colorOnTertiaryFixed">@color/fork_on_tertiary_fixed</item>
+        <item name="colorOnTertiaryFixedVariant">@color/fork_on_tertiary_fixed_variant</item>
+
+        <item name="viewInflaterClass">@null</item>
+        <item name="android:textColorPrimary">@color/fork_text_primary</item>
+        <item name="android:textColorSecondary">@color/fork_text_secondary</item>
+        <!-- Material 3's dialog button styles expect a MaterialButton; the AppCompatButton inflated here
+             cannot resolve their colours (drawn magenta), so dialog buttons use an AppCompat style. -->
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.SyncthingFork.Button.Dialog</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.SyncthingFork.Button.Dialog</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.SyncthingFork.Button.Dialog</item>
+    </style>
+
+    <style name="Widget.SyncthingFork.Button.Dialog" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">@color/fork_dialog_button_text</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <!-- The main screen's tab strip sits on colorPrimary under the toolbar overlay. Material 3's default
+         tab colours (colorPrimary selected, colorOnSurfaceVariant unselected) vanish there, so both
+         states and the indicator take the overlay's text colour (7:1, spec R36); the indicator marks
+         the selected tab. -->
+    <style name="Widget.SyncthingFork.TabLayout.OnToolbar" parent="Widget.Material3.TabLayout">
+        <item name="tabTextColor">?android:textColorPrimary</item>
+        <item name="tabSelectedTextColor">?android:textColorPrimary</item>
+        <item name="tabIconTint">?android:textColorPrimary</item>
+        <item name="tabIndicatorColor">?android:textColorPrimary</item>
+    </style>
+
+    <!-- Defined for the rebuilt screens; the layouts that name ThemeOverlay.Syncthing.Toolbar keep it for now. -->
+    <style name="ThemeOverlay.SyncthingFork.Toolbar" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <item name="android:windowBackground">@null</item>
+        <item name="colorAccent">@android:color/white</item>
+    </style>
+</resources>

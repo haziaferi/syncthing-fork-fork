@@ -168,7 +168,7 @@ fun DeviceIdDialog(
     onShare: () -> Unit,
     isCurrentDevice: Boolean,
 ) {
-    ApplicationTheme {
+    ApplicationTheme(allowWallpaper = false) {
         AlertDialog(
             properties = DialogProperties(usePlatformDefaultWidth = false),
             modifier = Modifier.let { if (!isLandscape()) it.widthIn(max = 460.dp).fillMaxWidth(0.9f) else it },

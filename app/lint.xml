@@ -103,4 +103,10 @@
     <issue id="WebViewClientOnReceivedSslError" severity="ignore">
         <ignore path="src/main/java/com/nutomic/syncthingandroid/activities/WebViewActivity.java" />
     </issue>
+    <!-- Fork: the v23 folders are deliberate. They hold overrides of upstream colours that must
+         outrank upstream's values and values-night without editing them (CLAUDE.md). -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/values-v23" />
+        <ignore path="src/main/res/values-night-v23" />
+    </issue>
 </lint>
