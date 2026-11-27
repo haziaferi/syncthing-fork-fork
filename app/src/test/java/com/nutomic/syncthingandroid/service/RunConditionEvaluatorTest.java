@@ -498,6 +498,24 @@ public class RunConditionEvaluatorTest {
         assertThat(d.reasons).doesNotContain(Reason.NOT_ON_WHITELISTED_WIFI);
     }
 
+    /**
+     * Ethernet counts as Wi-Fi (R07), but it has no Wi-Fi name to match the list (R08).
+     * Records today's behaviour: the list pauses Syncthing on a wired connection.
+     */
+    // SPEC:run-conditions:R07
+    // SPEC:run-conditions:R08
+    @Test
+    public void ethernet_wifiListOn_noWifi_pauses() {
+        prefs.edit()
+                .putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true)
+                .putStringSet(Constants.PREF_WIFI_SSID_WHITELIST, new HashSet<>(Collections.singleton("\"Home\"")))
+                .commit();
+        Decision d = decide(device().transport(Transport.ETHERNET).ethernetConnected(true).build());
+        assertThat(d.shouldRun).isFalse();
+        assertThat(d.reasons).containsExactly(Reason.MOBILE_DATA_DISALLOWED, Reason.ON_WIFI,
+                Reason.ON_NONMETERED_WIFI, Reason.NOT_ON_WHITELISTED_WIFI).inOrder();
+    }
+
     /** R07's table, row by row, for a folder's own conditions. */
     // SPEC:run-conditions:R07
     @Test
