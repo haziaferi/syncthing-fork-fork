@@ -107,6 +107,18 @@ class RunReasonsTest {
 
     // SPEC:ui-design:R21
     @Test
+    fun longForms_nameTheRealButtonLabels() {
+        val res = context.resources
+        val forceStart = RunReasons.longText(res, Reason.FORCE_START, decision(Reason.FORCE_START))
+        val forceStop = RunReasons.longText(res, Reason.FORCE_STOP, decision(Reason.FORCE_STOP))
+        assertThat(forceStart).contains(res.getString(StateAction.RUN_ANYWAY.label))
+        assertThat(forceStart).contains(res.getString(StateAction.FOLLOW_RULES.label))
+        assertThat(forceStop).contains(res.getString(StateAction.PAUSE.label))
+        assertThat(forceStop).contains(res.getString(StateAction.FOLLOW_RULES.label))
+    }
+
+    // SPEC:ui-design:R21
+    @Test
     fun shown_whileRunningOnWifi_isTheAllowedReasons() {
         val d = decide(wifi())
         assertThat(d.shouldRun).isTrue()
