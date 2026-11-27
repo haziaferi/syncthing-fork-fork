@@ -14,4 +14,8 @@
     <string name="fork_state_paused_by_you">Paused by you</string>
     <string name="fork_state_starting">Starting</string>
     <string name="fork_state_stopped">Stopped</string>
+    <string name="fork_action_pause">Pause</string>
+    <string name="fork_action_run_anyway">Run anyway</string>
+    <string name="fork_action_follow_rules">Follow rules</string>
+    <string name="fork_action_open">Open</string>
 </resources>
