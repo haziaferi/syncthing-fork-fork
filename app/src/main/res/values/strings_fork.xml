@@ -6,4 +6,12 @@
     <string name="fork_ui_density_compact">Compact</string>
     <string name="fork_ui_wallpaper_colours_title">Use wallpaper colours</string>
     <string name="fork_ui_wallpaper_colours_summary">Colours from your wallpaper, at higher contrast</string>
+    <string name="fork_state_running">Running</string>
+    <string name="fork_state_syncing">Syncing</string>
+    <string name="fork_state_paused_by_rules">Paused by your rules</string>
+    <string name="fork_state_paused_glance">Paused</string>
+    <string name="fork_state_running_anyway">Running anyway</string>
+    <string name="fork_state_paused_by_you">Paused by you</string>
+    <string name="fork_state_starting">Starting</string>
+    <string name="fork_state_stopped">Stopped</string>
 </resources>
