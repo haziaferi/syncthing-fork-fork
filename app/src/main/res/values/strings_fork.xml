@@ -73,6 +73,14 @@
         <item quantity="one">%d minute</item>
         <item quantity="other">%d minutes</item>
     </plurals>
+    <plurals name="fork_duration_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="fork_duration_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
     <string name="fork_action_turn_on_location">Turn on location</string>
     <string name="fork_action_restart_app">Restart app</string>
 </resources>

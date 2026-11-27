@@ -97,12 +97,22 @@ object RunReasons {
     fun longText(res: Resources, reason: Reason, decision: Decision): String {
         val long = words(reason).long
         if (reason != Reason.NOT_WITHIN_TIME_FRAME) return res.getString(long)
-        val minutes = decision.minutesSinceLastRun
-        val duration = if (minutes == 0) {
-            res.getString(R.string.fork_duration_under_a_minute)
-        } else {
-            res.getQuantityString(R.plurals.fork_duration_minutes, minutes, minutes)
-        }
-        return res.getString(long, duration)
+        return res.getString(long, duration(res, decision.minutesSinceLastRun))
     }
+
+    /**
+     * A gap since the last run, in the largest whole unit: minutes under an hour, hours under a
+     * day, then days (sleep intervals reach 21 days). Rounded down, so it never overstates the gap.
+     */
+    private fun duration(res: Resources, minutes: Int): String = when {
+        minutes <= 0 -> res.getString(R.string.fork_duration_under_a_minute)
+        minutes < MINUTES_PER_HOUR -> res.getQuantityString(R.plurals.fork_duration_minutes, minutes, minutes)
+        minutes < MINUTES_PER_DAY -> (minutes / MINUTES_PER_HOUR).let {
+            res.getQuantityString(R.plurals.fork_duration_hours, it, it)
+        }
+        else -> (minutes / MINUTES_PER_DAY).let { res.getQuantityString(R.plurals.fork_duration_days, it, it) }
+    }
+
+    private const val MINUTES_PER_HOUR = 60
+    private const val MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR
 }

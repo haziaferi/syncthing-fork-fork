@@ -275,6 +275,27 @@ class RunReasonsTest {
             .isEqualTo("You run Syncthing on a schedule. The last run was less than a minute ago.")
     }
 
+    /** Sleep intervals reach 21 days, so long gaps read in hours, then days, not thousands of minutes. */
+    // SPEC:ui-design:R21
+    @Test
+    fun longText_timeScheduleLongGaps_useHoursAndDays() {
+        val expected = mapOf(
+            1 to "1 minute",
+            59 to "59 minutes",
+            60 to "1 hour",
+            119 to "1 hour",
+            1439 to "23 hours",
+            1440 to "1 day",
+            30239 to "20 days",
+        )
+        for ((minutes, duration) in expected) {
+            val d = decision(Reason.NOT_WITHIN_TIME_FRAME, minutes)
+            assertWithMessage("$minutes minutes")
+                .that(RunReasons.longText(context.resources, Reason.NOT_WITHIN_TIME_FRAME, d))
+                .isEqualTo("You run Syncthing on a schedule. The last run was $duration ago.")
+        }
+    }
+
     @Test
     fun actions_onlyForLocationAndMonitor() {
         val res = context.resources
